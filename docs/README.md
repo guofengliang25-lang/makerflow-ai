@@ -8,7 +8,6 @@
 - [MVP Scope v0.2](product/04_MVP_Scope_v0.2.md)：当前单一场景、范围与非目标。
 - [Agent Task Graph v1.0](07.agent/06_Agent_Task_Graph_v1.0.md) 与 [Node I/O Matrix](07.agent/06_node_io_matrix.md)：任务职责与数据流。
 - [Skill Registry v1.1](skills/07_Skill_Registry_v1.1.md) 与 [Skill Contracts](skills/Skill_Contract/)：稳定能力边界；Human Gate 不作为 Skill。
-- [Data Model v0.1](architecture/12_Data_Model_v0.1.md)、[Design Spec Schema v0.1](architecture/13_Design_Spec_Schema_v0.1.md) 与 [Context Architecture v0.1](architecture/14_Context_Memory_Architecture_v0.1.md)：数据与状态架构草案；其中标记为未来的 RAG / Memory 不代表已经实现。
 - [Contract Eval Manifest](evals/02_contract_eval_manifest_v0.1.md)：评估定义入口；可执行资产位于仓库 `evals/`。
 - `prompts/`、`providers/`、`prototype/`、`schemas/`：当前可运行原型及其直接实现资产。
 
@@ -20,6 +19,7 @@
 - `05_constraint_recommendations.md` 至 `07_updated_main_flow.md`：W2 中间产品架构；其中 “SVG Checker” 是历史名称，当前统一使用 MakerFlow Preflight；
 - `product/01_JTBD_v1.0.md` 至 `product/05_Evidence_Matrix_v1.0.md`：早期研究综合；
 - `product/10_MakerFlow_AI_PRD_v0.1.md`、`prd/01_makerflow_full_prd_v0.1.md`：PRD 历史版本；
+- `architecture/12_Data_Model_v0.1.md`、`13_Design_Spec_Schema_v0.1.md`、`14_Context_Memory_Architecture_v0.1.md`：数据架构草案，部分“当前无模型 API”的阶段描述已被真实 DeepSeek 垂直切片取代；字段设计仍可作为历史依据，但实现状态以 Prototype 和 Full PRD v0.2 为准；
 - `skills/07_Skill_Registry_v1.0.md`、`skills/*Draft*`、`skills/*notes*`：Registry / Contract 形成过程；
 - `evals/01_contract_eval_audit_v0.1.md` 与初始 Eval cases：评估资产的审查历史。
 
