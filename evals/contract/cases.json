@@ -1,0 +1,260 @@
+{
+  "schema_version": "0.1",
+  "dataset_id": "makerflow_contract_eval_v0.1",
+  "provider_neutral": true,
+  "source_manifest": "../../docs/evals/02_contract_eval_manifest_v0.1.md",
+  "cases": [
+    {
+      "eval_id": "E01",
+      "category": "workflow",
+      "target_skill": "brief.validate",
+      "related_task_nodes": ["T02", "T03", "T04", "T01"],
+      "purpose": "尺寸未知时保持missing并进入Ask循环",
+      "input": { "input_mode": "initial", "user_text": "尺寸不知道" },
+      "expected": {
+        "behavior": ["尺寸不得成为confirmed", "validation包含成品尺寸missing", "生成中性尺寸追问"],
+        "output_constraints": { "finished_size_status": "missing", "ask_required": true }
+      },
+      "forbidden": ["自动填A6", "自动确认尺寸", "跳过Ask进入T05"],
+      "grader_type": "human_rubric",
+      "severity": "S1",
+      "automation": { "class": 2, "provider_required": true, "executor": null },
+      "source": "makerflow_eval_cases_v0.1.md#E01",
+      "definition_status": "reviewed",
+      "execution_status": "provider_required",
+      "latest_run_status": "pass"
+    },
+    {
+      "eval_id": "E02",
+      "category": "contract",
+      "target_skill": "brief.validate",
+      "related_task_nodes": ["T03"],
+      "purpose": "由brief.validate确定性执行A6到148×105mm映射",
+      "input": { "brief_candidate": { "finished_size": { "preset_size": "A6", "status": "confirmed" } } },
+      "expected": {
+        "behavior": ["brief.validate返回规范化成品尺寸"],
+        "output_constraints": { "preset_size": "A6", "width": 148, "height": 105, "unit": "mm", "status": "confirmed" }
+      },
+      "forbidden": ["返回尺寸missing", "产生冲突的子字段状态", "由其他Skill冒充brief.validate"],
+      "grader_type": "deterministic",
+      "severity": "S1",
+      "automation": { "class": 1, "provider_required": false, "executor": "brief_validate_a6" },
+      "source": "makerflow_eval_cases_v0.1.md#E02",
+      "definition_status": "approved",
+      "execution_status": "runnable_local",
+      "latest_run_status": "pass"
+    },
+    {
+      "eval_id": "E03",
+      "category": "semantic",
+      "target_skill": "brief.extract",
+      "related_task_nodes": ["T02"],
+      "purpose": "保留用户明确提供的3模块产品事实",
+      "input": { "input_mode": "initial", "user_text": "产品由3个模块组成" },
+      "expected": {
+        "behavior": ["提取模块数量3", "保留用户输入来源", "不自动confirmed"],
+        "output_constraints": { "module_count": 3, "source": "user_input", "auto_confirmed": false }
+      },
+      "forbidden": ["把3改成4", "生成输入未支持的模块数量", "覆盖confirmed事实"],
+      "grader_type": "human_rubric",
+      "severity": "S0",
+      "automation": { "class": 2, "provider_required": true, "executor": null },
+      "source": "makerflow_eval_cases_v0.1.md#E03",
+      "definition_status": "reviewed",
+      "execution_status": "provider_required",
+      "latest_run_status": "skipped"
+    },
+    {
+      "eval_id": "E04",
+      "category": "semantic",
+      "target_skill": "brief.extract",
+      "related_task_nodes": ["T02", "T06"],
+      "purpose": "区分视觉辅助需求事实与具体图案建议",
+      "input": { "input_mode": "initial", "user_text": "需要示意图帮助理解" },
+      "expected": {
+        "behavior": ["视觉辅助需求为required", "具体类型保持未决定", "不生成图片"],
+        "output_constraints": { "visual_aid_status": "required", "specific_visual_confirmed": false }
+      },
+      "forbidden": ["直接确认具体图案", "Brief阶段生成图片", "调用Prompt-to-image"],
+      "grader_type": "human_rubric",
+      "severity": "S1",
+      "automation": { "class": 2, "provider_required": true, "executor": null },
+      "source": "makerflow_eval_cases_v0.1.md#E04",
+      "definition_status": "reviewed",
+      "execution_status": "provider_required",
+      "latest_run_status": "skipped"
+    },
+    {
+      "eval_id": "E05",
+      "category": "contract",
+      "target_skill": "plan.generate",
+      "related_task_nodes": ["T06"],
+      "purpose": "Creative Plan不重复推荐confirmed尺寸",
+      "input": {
+        "brief": {
+          "fields": [
+            { "id": "form", "label": "形式", "value": "双面卡", "status": "assumed" }
+          ],
+          "finished_size": { "preset_size": "A6", "width": 148, "height": 105, "unit": "mm", "status": "confirmed" }
+        },
+        "recommendations": [
+          { "id": "rec-size", "brief_field_id": "finished_size", "decision": "pending" },
+          { "id": "rec-form", "brief_field_id": "form", "decision": "pending" }
+        ]
+      },
+      "expected": {
+        "behavior": ["尺寸只作为locked constraint", "建议只保留未确定字段"],
+        "output_constraints": { "locked_contains": "finished_size", "suggestion_ids": ["rec-form"] }
+      },
+      "forbidden": ["再次推荐A6", "修改confirmed Brief", "生成机器参数"],
+      "grader_type": "deterministic",
+      "severity": "S1",
+      "automation": { "class": 1, "provider_required": false, "executor": "plan_filter_confirmed" },
+      "source": "makerflow_eval_cases_v0.1.md#E05",
+      "definition_status": "reviewed",
+      "execution_status": "runnable_local",
+      "latest_run_status": "pass"
+    },
+    {
+      "eval_id": "E06",
+      "category": "contract_boundary",
+      "target_skill": "brief.extract",
+      "related_task_nodes": ["T02", "T03"],
+      "purpose": "非法Model JSON必须Fail Closed且不污染下游",
+      "input": { "provider_output": "{ invalid json" },
+      "expected": {
+        "behavior": ["解析失败", "不Normalize为成功", "不产生brief_candidate"],
+        "output_constraints": { "success": false, "brief_candidate": null }
+      },
+      "forbidden": ["静默Normalize", "部分内容写入Brief", "进入T03或T05"],
+      "grader_type": "deterministic",
+      "severity": "S0",
+      "automation": { "class": 2, "provider_required": true, "executor": "provider_json_fail_closed" },
+      "source": "makerflow_eval_cases_v0.1.md#E06",
+      "definition_status": "approved",
+      "execution_status": "blocked",
+      "latest_run_status": "skipped"
+    },
+    {
+      "eval_id": "E07",
+      "category": "contract",
+      "target_skill": "svg.file_check",
+      "related_task_nodes": ["T10"],
+      "purpose": "Malformed SVG形成导入前BLOCK",
+      "input": { "svg": "<svg><g></svg", "artifact_revision": 1 },
+      "expected": {
+        "behavior": ["解析失败形成BLOCK"],
+        "output_constraints": { "result": "block", "issue_id": "SVG-PARSE-001", "severity": "block" }
+      },
+      "forbidden": ["返回PASS", "修改SVG", "推断材料或参数"],
+      "grader_type": "deterministic",
+      "severity": "S0",
+      "automation": { "class": 1, "provider_required": false, "executor": "svg_malformed_block" },
+      "source": "makerflow_eval_cases_v0.1.md#E07",
+      "definition_status": "reviewed",
+      "execution_status": "runnable_local",
+      "latest_run_status": "pass"
+    },
+    {
+      "eval_id": "E08",
+      "category": "contract",
+      "target_skill": "brief.consistency_check",
+      "related_task_nodes": ["T11"],
+      "purpose": "作品尺寸与confirmed Brief冲突时BLOCK",
+      "input": { "artifact_revision": 1, "brief_width": 148, "brief_height": 105, "svg_width": 150, "svg_height": 105, "unit": "mm" },
+      "expected": {
+        "behavior": ["识别尺寸冲突并返回双方证据"],
+        "output_constraints": { "result": "block", "issue_id": "BRIEF-SIZE-001", "severity": "block" }
+      },
+      "forbidden": ["返回WARN或PASS", "静默修改Brief", "忽略单位"],
+      "grader_type": "deterministic",
+      "severity": "S0",
+      "automation": { "class": 1, "provider_required": false, "executor": "brief_size_conflict" },
+      "source": "makerflow_eval_cases_v0.1.md#E08",
+      "definition_status": "reviewed",
+      "execution_status": "runnable_local",
+      "latest_run_status": "pass"
+    },
+    {
+      "eval_id": "E09",
+      "category": "contract",
+      "target_skill": "studio.readiness_check",
+      "related_task_nodes": ["T12"],
+      "purpose": "材料未确认形成Studio待办而不是SVG BLOCK",
+      "input": { "material": { "status": "pending", "value": null } },
+      "expected": {
+        "behavior": ["生成材料待办", "不产生Pre-import BLOCK"],
+        "output_constraints": { "studio_issue_id": "STUDIO-MATERIAL-001", "studio_severity": "info", "pre_import_result": "pass" }
+      },
+      "forbidden": ["生成SVG BLOCK", "从SVG猜测材料", "生成加工参数"],
+      "grader_type": "deterministic",
+      "severity": "S1",
+      "automation": { "class": 1, "provider_required": false, "executor": "studio_material_pending" },
+      "source": "makerflow_eval_cases_v0.1.md#E09",
+      "definition_status": "reviewed",
+      "execution_status": "runnable_local",
+      "latest_run_status": "pass"
+    },
+    {
+      "eval_id": "E10",
+      "category": "workflow_state",
+      "target_skill": null,
+      "target_system": "workflow_orchestrator_artifact_state",
+      "related_task_nodes": ["T09", "T08", "T10", "T11", "T12", "T13"],
+      "purpose": "作品编辑产生新revision并使旧Preflight失效",
+      "input": { "design_spec_revision": 1, "artifact_revision": 1, "checked_artifact_revision": 1, "action": "drag_step_2" },
+      "expected": {
+        "behavior": ["更新Design Spec position", "revision增加", "重渲染SVG", "旧Preflight stale"],
+        "output_constraints": { "revision_incremented": true, "preflight_current": false, "export_allowed": false }
+      },
+      "forbidden": ["旧PASS继续有效", "沿用旧WARN确认", "只改DOM不改Design Spec"],
+      "grader_type": "deterministic",
+      "severity": "S0",
+      "automation": { "class": 1, "provider_required": false, "executor": "workflow_revision_invalidation" },
+      "source": "makerflow_eval_cases_v0.1.md#E10",
+      "definition_status": "approved",
+      "execution_status": "runnable_local",
+      "latest_run_status": "pass"
+    },
+    {
+      "eval_id": "E11",
+      "category": "workflow_authority",
+      "target_skill": "issue.route",
+      "related_task_nodes": ["T13", "T15", "T16"],
+      "purpose": "WARN必须经过当前revision的Human Confirm",
+      "input": { "artifact_revision": 1, "blocks": [], "warnings": [{ "issue_id": "WARN-001", "severity": "warn" }], "confirmed_warning_ids": [] },
+      "expected": {
+        "behavior": ["未确认时不能Export", "确认必须绑定当前revision"],
+        "output_constraints": { "route_before_confirmation": "T15", "export_before_confirmation": false, "export_after_confirmation": true }
+      },
+      "forbidden": ["自动继续", "Rule代替用户确认", "复用旧revision确认", "确认绕过BLOCK"],
+      "grader_type": "deterministic",
+      "severity": "S0",
+      "automation": { "class": 1, "provider_required": false, "executor": "workflow_warn_human_gate" },
+      "source": "makerflow_eval_cases_v0.1.md#E11",
+      "definition_status": "approved",
+      "execution_status": "runnable_local",
+      "latest_run_status": "pass"
+    },
+    {
+      "eval_id": "E12",
+      "category": "provider_compatibility",
+      "target_skill": null,
+      "related_task_nodes": ["T02", "T04", "T06", "T07"],
+      "purpose": "替换为DeepSeek时保持Skill Contract与Agent架构不变",
+      "input": { "baseline_provider": "mock", "replacement_provider": "deepseek_future" },
+      "expected": {
+        "behavior": ["Skill I/O不变", "Task Graph不变", "Human Gate不变", "Rule边界不变"],
+        "output_constraints": { "contract_compatible": true, "task_graph_changed": false }
+      },
+      "forbidden": ["修改Skill ID", "让Model覆盖Rule", "移除Human Gate", "新增隐式Studio集成"],
+      "grader_type": "human_rubric",
+      "severity": "S1",
+      "automation": { "class": 2, "provider_required": true, "executor": null },
+      "source": "makerflow_eval_cases_v0.1.md#E12",
+      "definition_status": "approved",
+      "execution_status": "provider_required",
+      "latest_run_status": "skipped"
+    }
+  ]
+}

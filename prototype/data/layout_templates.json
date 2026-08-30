@@ -1,0 +1,6 @@
+{
+  "templates": [
+    { "id": "three-column", "label": "横向三步", "supported_step_count": 3, "renderer": "renderThreeColumn" },
+    { "id": "vertical-steps", "label": "纵向步骤", "supported_step_count": 3, "renderer": "renderVerticalSteps" }
+  ]
+}

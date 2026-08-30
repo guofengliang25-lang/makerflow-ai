@@ -1,0 +1,7 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "type":"object",
+  "required":["clarifying_questions"],
+  "additionalProperties":false,
+  "properties":{"clarifying_questions":{"type":"array","minItems":1,"items":{"type":"object","required":["question_id","field_id","question","reason","priority"],"additionalProperties":false,"properties":{"question_id":{"type":"string","minLength":1},"field_id":{"type":"string","minLength":1},"question":{"type":"string","minLength":1},"reason":{"type":"string","minLength":1},"priority":{"enum":["P0","P1","P2"]}}}}}
+}

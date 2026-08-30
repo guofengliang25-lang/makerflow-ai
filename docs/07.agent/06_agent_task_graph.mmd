@@ -1,0 +1,54 @@
+flowchart TD
+    T01["T01 Intake User Input<br/>Human/UI"]
+    T02["T02 Extract Brief<br/>Model"]
+    T03["T03 Validate Brief<br/>Rule"]
+    T04["T04 Ask Missing Constraints<br/>Model"]
+    T05["T05 Confirm Brief<br/>Human"]
+    T06["T06 Generate Creative Plan<br/>Model"]
+    T07["T07 Build Design Spec<br/>Model + Rule"]
+    T08["T08 Render SVG<br/>Tool"]
+    T09["T09 Edit Draft<br/>Human/UI"]
+    T10["T10 SVG File Check<br/>Tool"]
+    T11["T11 Brief Consistency Check<br/>Tool + Rule"]
+    T12["T12 Studio Readiness Check<br/>Rule"]
+    T13["T13 Route Issues<br/>Rule"]
+    T14["T14 Apply Safe Fix<br/>Future / Backlog · Not in Current Path"]
+    T15["T15 Confirm Warning<br/>Human"]
+    T16["T16 Export Verified Artifact<br/>Tool"]
+    T17["T17 Show Studio Checklist<br/>Rule/UI"]
+    END["Handoff Ends<br/>不进入设备执行"]
+
+    T01 --> T02
+    T02 --> T03
+    T03 -->|"Brief缺失或冲突"| T04
+    T04 -->|"用户回答写回输入"| T01
+    T03 -->|"规则校验通过"| T05
+    T05 -->|"用户要求修改"| T01
+    T05 -->|"确认Brief"| T06
+
+    T06 --> T07
+    T07 -->|"有效Design Spec"| T08
+    T07 -->|"Schema或约束失败"| T06
+    T08 -->|"显示当前SVG作品"| T09
+    T09 -->|"结构化属性写回Design Spec"| T08
+
+    T09 -->|"检查当前revision"| T10
+    T09 -->|"检查当前revision"| T11
+    T09 -->|"读取独立project_state"| T12
+    T10 --> T13
+    T11 --> T13
+    T12 --> T13
+
+    T13 -->|"BLOCK · 返回内置编辑"| T09
+    T13 -->|"BLOCK · 外部工具修改后重新上传"| T09
+
+    T13 -->|"WARN"| T15
+    T15 -->|"拒绝风险或选择修改"| T09
+    T15 -->|"记录人工确认"| T16
+    T13 -->|"PASS · 无未确认WARN"| T16
+
+    T16 --> T17
+    T17 -->|"仅展示Studio人工待办"| END
+
+    classDef backlog fill:#f3f4f6,stroke:#9ca3af,color:#6b7280,stroke-dasharray: 5 5
+    class T14 backlog

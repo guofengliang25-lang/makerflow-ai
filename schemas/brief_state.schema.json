@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "brief_state.schema.json",
+  "title": "MakerFlow Brief State v0.1",
+  "type": "object",
+  "required": ["brief_revision", "lifecycle", "fields"],
+  "properties": {
+    "brief_revision": { "type": "integer", "minimum": 1 },
+    "lifecycle": {
+      "type": "string",
+      "enum": ["draft", "ready_for_confirmation", "confirmed", "superseded"]
+    },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "status", "critical"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "value": {},
+          "status": {
+            "type": "string",
+            "enum": ["confirmed", "assumed", "missing", "needs_confirmation"]
+          },
+          "critical": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

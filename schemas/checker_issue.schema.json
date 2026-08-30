@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://makerflow.local/schemas/checker_issue.schema.json",
+  "title": "MakerFlow Checker Issue",
+  "description": "A single issue emitted by the MakerFlow SVG Checker policy.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "issue_id",
+    "title",
+    "severity",
+    "resolution_stage",
+    "owner",
+    "can_import_to_studio",
+    "must_resolve_before_processing",
+    "evidence",
+    "message",
+    "next_steps"
+  ],
+  "properties": {
+    "issue_id": {
+      "type": "string",
+      "pattern": "^MF-CHK-[A-Z0-9_-]+$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "severity": {
+      "enum": ["block", "warn", "info"]
+    },
+    "resolution_stage": {
+      "enum": [
+        "before_import",
+        "in_design_tool",
+        "in_studio",
+        "before_processing",
+        "out_of_scope"
+      ]
+    },
+    "owner": {
+      "type": "string",
+      "minLength": 1
+    },
+    "can_import_to_studio": {
+      "type": "boolean"
+    },
+    "must_resolve_before_processing": {
+      "type": "boolean"
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/evidence_item"
+      }
+    },
+    "message": {
+      "type": "string",
+      "minLength": 1
+    },
+    "next_steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "severity": { "const": "block" },
+          "resolution_stage": {
+            "enum": ["before_import", "in_design_tool"]
+          }
+        },
+        "required": ["severity", "resolution_stage"]
+      },
+      "then": {
+        "properties": {
+          "can_import_to_studio": { "const": false },
+          "must_resolve_before_processing": { "const": true }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "resolution_stage": { "const": "before_processing" }
+        },
+        "required": ["resolution_stage"]
+      },
+      "then": {
+        "properties": {
+          "must_resolve_before_processing": { "const": true }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "resolution_stage": { "const": "in_studio" }
+        },
+        "required": ["resolution_stage"]
+      },
+      "then": {
+        "properties": {
+          "can_import_to_studio": { "const": true }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "evidence_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "subject", "observed", "basis", "verification_status"],
+      "properties": {
+        "source": {
+          "enum": ["checker", "brief", "mock", "user", "official_documentation"]
+        },
+        "subject": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observed": {
+          "type": "string",
+          "minLength": 1
+        },
+        "basis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verification_status": {
+          "enum": ["observed", "user_confirmed", "mock", "pending_actual_verification"]
+        }
+      }
+    }
+  }
+}
+

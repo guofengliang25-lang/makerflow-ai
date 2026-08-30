@@ -1,0 +1,6 @@
+{
+  "qa_mode": "warn",
+  "description": "向当前SVG副本注入空path；结果仍由真实Preflight规则计算。",
+  "mutation": "empty_path",
+  "does_not_contain_precomputed_issues": true
+}

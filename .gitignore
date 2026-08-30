@@ -1,0 +1,6 @@
+.env
+.env.*
+
+# Local real-provider smoke artifacts may contain user/model content.
+evals/artifacts/deepseek/
+

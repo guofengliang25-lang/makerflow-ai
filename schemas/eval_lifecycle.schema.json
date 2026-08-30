@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "eval_lifecycle.schema.json",
+  "title": "MakerFlow Eval Lifecycle v0.1",
+  "type": "object",
+  "required": ["definition_status", "execution_status", "latest_run_status"],
+  "properties": {
+    "definition_status": { "enum": ["draft", "reviewed", "approved"] },
+    "execution_status": { "enum": ["manual_only", "runnable_local", "provider_required", "blocked"] },
+    "latest_run_status": { "enum": ["not_run", "pass", "fail", "skipped", "error"] }
+  },
+  "additionalProperties": true
+}

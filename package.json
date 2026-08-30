@@ -1,0 +1,12 @@
+{
+  "name": "makerflow-demo",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test prototype/tests/*.test.mjs evals/runners/run_contract_evals.test.js"
+  }
+}

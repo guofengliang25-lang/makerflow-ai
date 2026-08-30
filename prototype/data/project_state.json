@@ -1,0 +1,8 @@
+{
+  "schema_version": "1.0",
+  "device": { "status": "pending", "value": null, "source": "project_state" },
+  "material": { "status": "pending", "value": null, "source": "project_state" },
+  "processing_parameters": { "status": "pending", "value": null, "source": "project_state" },
+  "preview": { "status": "pending", "completed": false, "source": "project_state" },
+  "framing": { "status": "pending", "completed": false, "source": "project_state" }
+}

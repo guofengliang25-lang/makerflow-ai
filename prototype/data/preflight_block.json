@@ -1,0 +1,6 @@
+{
+  "qa_mode": "block",
+  "description": "向当前SVG副本注入重复ID；结果仍由真实Preflight规则计算。",
+  "mutation": "duplicate_id",
+  "does_not_contain_precomputed_issues": true
+}

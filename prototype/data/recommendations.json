@@ -1,0 +1,45 @@
+{
+  "plan_version": 2,
+  "items": [
+    {
+      "id":"rec-form", "category":"形式 / 版式", "brief_field_id":"form", "decision":"pending", "variant_index":0,
+      "recommendation":"采用双面A6说明卡，正面比较组合，背面放使用提醒", "based_on":"形式目前为暂定；信息需要分层呈现", "benefit":"减少单面信息拥挤", "tradeoff":"需要用户翻面阅读", "confidence":"medium",
+      "variants":[
+        {"recommendation":"采用双面A6说明卡，正面比较组合，背面放使用提醒","based_on":"形式目前为暂定；信息需要分层呈现","benefit":"减少单面信息拥挤","tradeoff":"需要用户翻面阅读","confidence":"medium"},
+        {"recommendation":"采用单面三栏比较版式","based_on":"三种组合适合并列比较","benefit":"用户无需翻面即可完成比较","tradeoff":"文案空间更紧张","confidence":"medium"}
+      ]
+    },
+    {
+      "id":"rec-material", "category":"材料", "brief_field_id":"material_direction", "decision":"pending", "variant_index":0,
+      "recommendation":"优先评估未涂布卡纸", "based_on":"材料方向仍为暂定，不来自SVG推断", "benefit":"反光较少，文字阅读稳定", "tradeoff":"克重与设备兼容仍需制作方确认", "confidence":"low",
+      "variants":[
+        {"recommendation":"优先评估未涂布卡纸","based_on":"材料方向仍为暂定，不来自SVG推断","benefit":"反光较少，文字阅读稳定","tradeoff":"克重与设备兼容仍需制作方确认","confidence":"low"},
+        {"recommendation":"先使用普通纸进行信息打样","based_on":"当前重点是验证理解，不是验证最终材料","benefit":"成本低，便于快速修改","tradeoff":"不能代表最终触感和耐用性","confidence":"high"}
+      ]
+    },
+    {
+      "id":"rec-color", "category":"颜色", "brief_field_id":"color_direction", "decision":"pending", "variant_index":0,
+      "recommendation":"以黑白灰高对比为主，仅用单一强调色区分组合", "based_on":"颜色方向仍为暂定；任务优先保证可读性", "benefit":"层级清晰，测试成本低", "tradeoff":"品牌表现相对克制", "confidence":"medium",
+      "variants":[
+        {"recommendation":"以黑白灰高对比为主，仅用单一强调色区分组合","based_on":"颜色方向仍为暂定；任务优先保证可读性","benefit":"层级清晰，测试成本低","tradeoff":"品牌表现相对克制","confidence":"medium"},
+        {"recommendation":"三种组合使用三档灰度，不增加额外品牌色","based_on":"避免颜色承担唯一信息编码","benefit":"灰度打印仍可区分","tradeoff":"视觉吸引力较弱","confidence":"medium"}
+      ]
+    },
+    {
+      "id":"rec-visual-aid", "category":"视觉辅助", "decision_key":"visual_aid_type", "decision":"pending", "variant_index":0,
+      "recommendation":"三组模块组合示意图 + 简洁线性图标", "based_on":"用户已确认需要解释结构和步骤，但具体形式未确定", "benefit":"降低纯文字理解成本", "tradeoff":"示意图不代表精确产品比例", "confidence":"high", "visual_type":"structural_diagram", "variant_id":"module-combination-linear",
+      "variants":[
+        {"recommendation":"三组模块组合示意图 + 简洁线性图标","based_on":"需要同时解释结构和步骤","benefit":"便于横向比较","tradeoff":"不表达精确比例","confidence":"high","visual_type":"structural_diagram","variant_id":"module-combination-linear"},
+        {"recommendation":"模块叠放简笔插画 + 三步操作图标","based_on":"首次使用者需要理解叠放关系","benefit":"结构关系更直观","tradeoff":"占用更多版面","confidence":"medium","visual_type":"simple_illustration","variant_id":"module-stack"}
+      ]
+    },
+    {
+      "id":"rec-path", "category":"制作路径", "decision_key":"production_path", "decision":"pending", "variant_index":0,
+      "recommendation":"先输出纸面样张验证理解，再进入制作软件", "based_on":"当前重点是验证信息与版式", "benefit":"低成本发现内容问题", "tradeoff":"不能验证最终材料与设备效果", "confidence":"high",
+      "variants":[
+        {"recommendation":"先输出纸面样张验证理解，再进入制作软件","based_on":"当前重点是验证信息与版式","benefit":"低成本发现内容问题","tradeoff":"不能验证最终材料与设备效果","confidence":"high"},
+        {"recommendation":"先完成屏幕评审，再安排一次缩尺打印","based_on":"先排除明显内容错误再消耗材料","benefit":"减少无效打样","tradeoff":"屏幕尺寸感与实物不同","confidence":"medium"}
+      ]
+    }
+  ]
+}

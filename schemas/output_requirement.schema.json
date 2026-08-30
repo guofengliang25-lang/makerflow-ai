@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "output_requirement.schema.json",
+  "title": "MakerFlow Output Requirement v0.1",
+  "type": "object",
+  "required": ["format", "requirement_level"],
+  "properties": {
+    "format": { "type": "string", "minLength": 1 },
+    "requirement_level": { "enum": ["required", "preferred", "optional"] },
+    "fulfillment_status": { "enum": ["ready", "unsupported", "missing", "not_requested"] }
+  },
+  "additionalProperties": false
+}

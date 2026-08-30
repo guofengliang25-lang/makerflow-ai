@@ -1,0 +1,7 @@
+import assert from "node:assert/strict";import test from "node:test";
+import {executeBriefAskMissing} from "../../providers/brief-ask-missing-executor.mjs";
+const input={brief_candidate:{brief_revision:1},brief_validation_result:{},missing_items:["finished_size"],conflict_items:[],confirmed_context:{}};
+const response=content=>async()=>({ok:true,text:async()=>JSON.stringify({model:"deepseek-chat",choices:[{message:{content:JSON.stringify(content)}}]})});
+test("ask_missing only phrases Rule-selected fields",async()=>{const r=await executeBriefAskMissing({structuredInput:input,env:{DEEPSEEK_API_KEY:"test"},fetchImpl:response({clarifying_questions:[{question_id:"q1",field_id:"finished_size",question:"成品需要多宽和多高？",reason:"完成尺寸校验",priority:"P0"}]})});assert.equal(r.ok,true);assert.equal(r.clarifying_questions[0].field_id,"finished_size")});
+test("ask_missing rejects new fields and default answers",async()=>{for(const q of [{question_id:"q",field_id:"material",question:"材料是什么？",reason:"x",priority:"P0"},{question_id:"q",field_id:"finished_size",question:"建议使用A6，可以吗？",reason:"x",priority:"P0"}]){const r=await executeBriefAskMissing({structuredInput:input,env:{DEEPSEEK_API_KEY:"test"},fetchImpl:response({clarifying_questions:[q]})});assert.equal(r.ok,false)}});
+test("provider failure preserves caller-owned state",async()=>{const original=structuredClone(input);const r=await executeBriefAskMissing({structuredInput:input,env:{},fetchImpl:async()=>assert.fail()});assert.equal(r.ok,false);assert.deepEqual(input,original)});

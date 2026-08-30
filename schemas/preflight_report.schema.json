@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "preflight_report.schema.json",
+  "title": "MakerFlow Preflight Report v0.1",
+  "type": "object",
+  "required": ["checked_artifact_revision", "checked_brief_revision", "issues", "status"],
+  "properties": {
+    "checked_artifact_revision": { "type": "integer", "minimum": 1 },
+    "checked_brief_revision": { "type": "integer", "minimum": 1 },
+    "checked_project_state_version": { "type": ["integer", "string"] },
+    "status": { "enum": ["block", "warn", "pass", "stale"] },
+    "issues": { "type": "array" }
+  },
+  "additionalProperties": true
+}

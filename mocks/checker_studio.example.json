@@ -1,0 +1,25 @@
+{
+  "issue_id": "MF-CHK-STUDIO_SIZE_001",
+  "title": "在 Studio 中核对导入尺寸",
+  "severity": "warn",
+  "resolution_stage": "in_studio",
+  "owner": "studio_operator",
+  "can_import_to_studio": true,
+  "must_resolve_before_processing": true,
+  "evidence": [
+    {
+      "source": "mock",
+      "subject": "verified_candidate_v03.svg",
+      "observed": "文件层尺寸声明与已确认 Brief 一致；实际 Studio 导入尺寸尚未核对。[待实际验证]",
+      "basis": "Pre-import 检查不能替代 xTool Studio 中的实际尺寸核对。",
+      "verification_status": "pending_actual_verification"
+    }
+  ],
+  "message": "该文件可以进入 xTool Studio 导入验证，但必须在加工前由用户核对实际导入尺寸。[待实际验证]",
+  "next_steps": [
+    "将 Verified SVG 导入 xTool Studio。[待实际验证]",
+    "记录软件版本、显示尺寸和单位。[待实际验证]",
+    "将 Studio 中的尺寸与已确认 Brief 对照；不一致时停止加工并返回设计工具修复。[待实际验证]"
+  ]
+}
+

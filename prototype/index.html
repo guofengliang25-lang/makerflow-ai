@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MakerFlow 低保真流程 Demo</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">MakerFlow v0.2 · SVG-first Demo</p>
+      <h1>MakerFlow</h1>
+    </div>
+    <div id="qaControls" class="header-actions" hidden>
+      <label for="scenarioSelect">Preflight 场景</label>
+      <select id="scenarioSelect" aria-label="切换Preflight场景">
+        <option value="block">BLOCK</option>
+        <option value="warn">WARN</option>
+        <option value="pass">PASS</option>
+      </select>
+    </div>
+    <button id="resetButton" class="button secondary" type="button">一键重置</button>
+  </header>
+
+  <nav class="stepper" aria-label="流程步骤">
+    <button data-step="1"><span>1</span>Define</button>
+    <button data-step="2"><span>2</span>Editable Brief</button>
+    <button data-step="3"><span>3</span>Creative Plan</button>
+    <button data-step="4"><span>4</span>Create &amp; Edit</button>
+    <button data-step="5"><span>5</span>Preflight</button>
+    <button data-step="6"><span>6</span>Resolve Issues</button>
+    <button data-step="7"><span>7</span>Export &amp; Handoff</button>
+  </nav>
+
+  <main id="app" tabindex="-1"></main>
+
+  <footer class="bottom-bar">
+    <p id="gateMessage" class="gate-message" aria-live="polite"></p>
+    <div>
+      <button id="prevButton" class="button secondary" type="button">上一步</button>
+      <button id="nextButton" class="button primary" type="button">下一步</button>
+    </div>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

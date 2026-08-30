@@ -1,0 +1,6 @@
+{
+  "qa_mode": "pass",
+  "description": "不修改当前SVG，直接交给真实Preflight规则计算。",
+  "mutation": "none",
+  "does_not_contain_precomputed_issues": true
+}

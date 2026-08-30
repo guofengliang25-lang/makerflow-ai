@@ -1,0 +1,128 @@
+# MakerFlow Contract Eval Baseline — Mock v0.1
+
+> Provider: none（未调用真实模型API）  
+> Generated at: 2026-08-15T10:52:08.344Z  
+> Dataset: `evals/contract/cases.json`
+
+## Summary
+
+- total: 12
+- pass: 4
+- fail: 3
+- skipped: 5
+
+## Results
+
+| eval_id | status | failure_reason |
+|---|---|---|
+| E01 | SKIPPED_PROVIDER_REQUIRED | SKIPPED_PROVIDER_REQUIRED: 当前未接入真实Model Provider。 |
+| E02 | FAIL | CONTRACT_OWNER_MISMATCH: A6映射存在于plan-policy，但当前没有可调用的brief.validate实现/输出位置。 |
+| E03 | SKIPPED_PROVIDER_REQUIRED | SKIPPED_PROVIDER_REQUIRED: 当前未接入真实Model Provider。 |
+| E04 | SKIPPED_PROVIDER_REQUIRED | SKIPPED_PROVIDER_REQUIRED: 当前未接入真实Model Provider。 |
+| E05 | PASS | — |
+| E06 | SKIPPED_PROVIDER_REQUIRED | SKIPPED_PROVIDER_REQUIRED: 当前未接入真实Model Provider。 |
+| E07 | PASS | — |
+| E08 | PASS | — |
+| E09 | PASS | — |
+| E10 | FAIL | EXECUTOR_UNAVAILABLE: 当前产品没有可由Node Runner调用的workflow_state执行入口。 |
+| E11 | FAIL | EXECUTOR_UNAVAILABLE: 当前产品没有可由Node Runner调用的workflow_authority执行入口。 |
+| E12 | SKIPPED_PROVIDER_REQUIRED | SKIPPED_PROVIDER_REQUIRED: 当前未接入真实Model Provider。 |
+
+## Failures
+
+### E02
+
+- failure_reason: CONTRACT_OWNER_MISMATCH: A6映射存在于plan-policy，但当前没有可调用的brief.validate实现/输出位置。
+- Expected:
+
+```json
+{
+  "implementation_owner": "brief.validate",
+  "normalized_size": {
+    "preset_size": "A6",
+    "width": 148,
+    "height": 105,
+    "unit": "mm",
+    "status": "confirmed"
+  }
+}
+```
+
+- Actual:
+
+```json
+{
+  "implementation_owner": "prototype/plan-policy.normalizeFinishedSize",
+  "callable_target_skill": null,
+  "normalized_size": {
+    "preset_size": "A6",
+    "width": 148,
+    "height": 105,
+    "unit": "mm",
+    "status": "confirmed",
+    "source": "preset"
+  }
+}
+```
+
+### E10
+
+- failure_reason: EXECUTOR_UNAVAILABLE: 当前产品没有可由Node Runner调用的workflow_state执行入口。
+- Expected:
+
+```json
+{
+  "behavior": [
+    "更新Design Spec position",
+    "revision增加",
+    "重渲染SVG",
+    "旧Preflight stale"
+  ],
+  "output_constraints": {
+    "revision_incremented": true,
+    "preflight_current": false,
+    "export_allowed": false
+  }
+}
+```
+
+- Actual:
+
+```json
+{
+  "executor": "workflow_revision_invalidation",
+  "available": false
+}
+```
+
+### E11
+
+- failure_reason: EXECUTOR_UNAVAILABLE: 当前产品没有可由Node Runner调用的workflow_authority执行入口。
+- Expected:
+
+```json
+{
+  "behavior": [
+    "未确认时不能Export",
+    "确认必须绑定当前revision"
+  ],
+  "output_constraints": {
+    "route_before_confirmation": "T15",
+    "export_before_confirmation": false,
+    "export_after_confirmation": true
+  }
+}
+```
+
+- Actual:
+
+```json
+{
+  "executor": "workflow_warn_human_gate",
+  "available": false
+}
+```
+
+## Boundary
+
+SKIPPED不计为PASS。本报告未调用模型API，也未修改产品逻辑或Expected。

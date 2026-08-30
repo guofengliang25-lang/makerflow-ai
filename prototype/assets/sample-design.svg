@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="148mm" height="105mm" viewBox="0 0 148 105" role="img" aria-labelledby="title desc">
+  <title id="title">MomoRay说明卡Mock样本</title>
+  <desc id="desc">用于MakerFlow低保真Demo展示的灰度说明卡测试夹具，不可直接用于加工。</desc>
+  <rect x="1" y="1" width="146" height="103" fill="#fff" stroke="#333" stroke-width="0.6"/>
+  <text id="instruction-title" x="10" y="17" font-family="Arial, sans-serif" font-size="8" fill="#222">MomoRay 高度调节说明</text>
+  <line x1="10" y1="24" x2="138" y2="24" stroke="#777" stroke-width="0.5"/>
+  <g fill="#ddd" stroke="#555" stroke-width="0.5">
+    <rect x="10" y="34" width="35" height="28"/>
+    <rect x="56.5" y="34" width="35" height="28"/>
+    <rect x="103" y="34" width="35" height="28"/>
+  </g>
+  <g fill="#444" font-family="Arial, sans-serif" font-size="5">
+    <text x="10" y="72">0片 · 15 cm</text><text x="56.5" y="72">1片 · 16 cm</text><text x="103" y="72">2片 · 17 cm</text>
+    <text x="10" y="80">偏高时减少</text><text x="56.5" y="80">标准起点</text><text x="103" y="80">偏低时增加</text>
+    <text x="10" y="91">Mock sample · 非加工文件</text>
+  </g>
+</svg>

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "artifact_revision.schema.json",
+  "title": "MakerFlow Artifact Revision v0.1",
+  "type": "object",
+  "required": ["artifact_revision", "authoring_source", "design_spec_status", "artifact_type"],
+  "properties": {
+    "artifact_revision": { "type": "integer", "minimum": 1 },
+    "source_design_spec_revision": { "type": ["integer", "null"], "minimum": 1 },
+    "authoring_source": { "enum": ["makerflow_spec", "external_artifact"] },
+    "design_spec_status": { "enum": ["native", "derived_partial", "none"] },
+    "artifact_type": { "const": "svg" },
+    "content_hash": { "type": "string" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "authoring_source": { "const": "makerflow_spec" } } },
+      "then": {
+        "properties": {
+          "design_spec_status": { "const": "native" },
+          "source_design_spec_revision": { "type": "integer", "minimum": 1 }
+        },
+        "required": ["source_design_spec_revision"]
+      }
+    },
+    {
+      "if": { "properties": { "authoring_source": { "const": "external_artifact" } } },
+      "then": {
+        "properties": {
+          "design_spec_status": { "enum": ["derived_partial", "none"] },
+          "source_design_spec_revision": { "type": "null" }
+        }
+      }
+    }
+  ],
+  "additionalProperties": true
+}

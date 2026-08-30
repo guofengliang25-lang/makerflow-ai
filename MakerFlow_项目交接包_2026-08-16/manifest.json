@@ -1,0 +1,18 @@
+{
+  "generated_at": "2026-08-16",
+  "project": "2027秋招｜JD简历面试系统 / MakerFlow AI",
+  "files": [
+    "README_交接包.md",
+    "00_MASTER_HANDOFF_总摘要.md",
+    "01_最终目标_背景_硬性规则.md",
+    "02_MakerFlow_产品范围与关键决策.md",
+    "03_Agent_TaskGraph_Skill_State_Memory.md",
+    "04_Eval_AI_PRD_核心资产与工作流.md",
+    "05_Demo_UX_开发与真实性规则.md",
+    "06_事实证据_被否决方案_不可再提交内容.md",
+    "07_知识地图_术语_面试问题.md",
+    "08_当前进度_下一步_新会话启动词.md",
+    "09_后续回答与Codex协作模板.md"
+  ],
+  "note": "Latest confirmed decisions take precedence over older project files."
+}

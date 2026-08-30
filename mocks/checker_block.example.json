@@ -1,0 +1,25 @@
+{
+  "issue_id": "MF-CHK-SVG_PARSE_001",
+  "title": "SVG 文件无法解析",
+  "severity": "block",
+  "resolution_stage": "before_import",
+  "owner": "designer",
+  "can_import_to_studio": false,
+  "must_resolve_before_processing": true,
+  "evidence": [
+    {
+      "source": "mock",
+      "subject": "candidate_v01.svg",
+      "observed": "XML 结束标签缺失，Checker 无法建立 SVG 文档结构。",
+      "basis": "Pre-import Gate 要求文件能够被解析后才能执行其余规则。",
+      "verification_status": "mock"
+    }
+  ],
+  "message": "当前 Mock 文件无法完成文件层检查，因此不能标记为 Verified SVG，也不应进入 xTool Studio 导入验证。",
+  "next_steps": [
+    "在设计工具中重新导出 SVG，或修复 XML 结构。",
+    "将修复结果保存为新文件版本。",
+    "对新版本重新运行完整 Pre-import Gate。"
+  ]
+}
+

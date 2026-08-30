@@ -1,0 +1,10 @@
+{
+  "productFacts": "MomoRay产品负责人确认：三种模块组合分别使用0、1、2片垫片，对应真实枕高为15、16、17 cm。感觉偏高时可减少垫片；1片为标准配置，可作为默认起点；感觉偏低时可增加垫片。用户身高只作为辅助理解场景，不是精确医学匹配规则。",
+  "cardPurpose": "制作一张放入包装内的MomoRay高度调节说明卡，采用A6成品尺寸。三种模块组合分别使用0、1、2片垫片，对应真实枕高15、16、17 cm；说明用户感觉偏高时减少垫片、1片是标准默认起点、感觉偏低时增加垫片。用户身高只作为辅助理解场景，不是精确医学匹配规则。以上数据来自MomoRay product owner / project confirmed data。",
+  "references": "产品结构草图、现有包装照片、品牌基础文案（均为Mock引用）",
+  "existingFiles": "sample-design.svg",
+  "draft_overrides": {
+    "maker": { "value": "待确认由谁制作", "status": "needs_confirmation" },
+    "material_direction": { "value": "未涂布纸或卡纸", "status": "assumed" }
+  }
+}

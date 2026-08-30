@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.1",
+  "design_spec_revision": 1,
+  "project_id": "momoray-insert-card",
+  "brief_revision": 1,
+  "canvas": { "width": 148, "height": 105, "unit": "mm" },
+  "content": {
+    "title": "MomoRay 高度调节说明",
+    "steps": [
+      { "id": "step-1", "title": "0片 · 15 cm", "body": "感觉偏高时，可减少垫片", "insert_count": 0, "pillow_height": { "value": 15, "unit": "cm" } },
+      { "id": "step-2", "title": "1片 · 16 cm", "body": "标准配置，适合作为默认起点", "insert_count": 1, "pillow_height": { "value": 16, "unit": "cm" } },
+      { "id": "step-3", "title": "2片 · 17 cm", "body": "感觉偏低时，可增加垫片", "insert_count": 2, "pillow_height": { "value": 17, "unit": "cm" } }
+    ],
+    "footer": "请根据实际使用感受调整模块组合"
+  },
+  "layout": { "template_id": "three-column" },
+  "style": { "primary_color": "#333333", "background_color": "#ffffff" },
+  "icons": { "step-1": "pillow-low", "step-2": "pillow-medium", "step-3": "pillow-high" },
+  "elements": {
+    "title":{"id":"title","position":{"x":0,"y":0},"draggable":true,"locked":false},
+    "step-1":{"id":"step-1","position":{"x":0,"y":0},"draggable":true,"locked":false},
+    "step-2":{"id":"step-2","position":{"x":0,"y":0},"draggable":true,"locked":false},
+    "step-3":{"id":"step-3","position":{"x":0,"y":0},"draggable":true,"locked":false},
+    "footer":{"id":"footer","position":{"x":0,"y":0},"draggable":true,"locked":false},
+    "visual-elements":{"id":"visual-elements","position":{"x":0,"y":0},"draggable":true,"locked":false},
+    "cutline":{"id":"cutline","position":{"x":0,"y":0},"draggable":false,"locked":true},
+    "artboard":{"id":"artboard","position":{"x":0,"y":0},"draggable":false,"locked":true}
+  },
+  "visual_elements": { "enabled": true, "type": "structural_diagram", "purpose": ["explain_structure","explain_steps"], "asset_source": "makerflow_template", "variant_id": "module-combination-linear" },
+  "illustration": { "enabled": false, "asset_id": null },
+  "cutline": { "required": true, "enabled": true, "id": "cutline" },
+  "output_requirements": { "pure_vector": true, "text_strategy": "editable", "required_format": "svg" },
+  "source": { "type": "makerflow_template", "label": "MakerFlow模板生成" }
+}

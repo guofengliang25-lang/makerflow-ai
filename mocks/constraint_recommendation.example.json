@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "source": "mock",
+  "brief_reference": {
+    "brief_id": "MF-BRIEF-MOMORAY-001",
+    "version": "1.0",
+    "confirmation_status": "confirmed"
+  },
+  "recommendations": [
+    {
+      "recommendation_id": "MF-REC-001",
+      "category": "form",
+      "recommendation": "优先比较单页双面卡与三折页两个形式，再由用户根据内容量确认。",
+      "based_on": ["使用场景：包装内", "内容包含结构说明与调整步骤"],
+      "benefit": "两个候选形式能覆盖快速阅读与分步说明的不同需要。",
+      "tradeoff": "三折页可容纳更多内容，但阅读顺序和折叠制作更复杂。",
+      "confidence": "medium",
+      "requires_user_confirmation": true
+    },
+    {
+      "recommendation_id": "MF-REC-002",
+      "category": "dimensions",
+      "recommendation": "先以包装可用空间定义成品尺寸，再反推展开尺寸和折线位置。",
+      "based_on": ["使用场景：包装内", "包装内部可用空间尚需用户提供"],
+      "benefit": "减少说明卡与包装空间不匹配的风险。",
+      "tradeoff": "在包装尺寸确认前不能锁定最终画布和刀线。",
+      "confidence": "high",
+      "requires_user_confirmation": true
+    },
+    {
+      "recommendation_id": "MF-REC-003",
+      "category": "material",
+      "recommendation": "首轮使用普通打印纸或卡纸制作低成本样张，正式材料在打样和设备条件确认后决定。[待实际验证]",
+      "based_on": ["材料方向：纸张或卡纸", "当前目标：低成本验证"],
+      "benefit": "可以先验证尺寸、折叠和可读性，不把材料选择提前固化。",
+      "tradeoff": "普通样张不能证明正式材料的折叠耐久、印刷效果或设备兼容。",
+      "confidence": "medium",
+      "requires_user_confirmation": true
+    },
+    {
+      "recommendation_id": "MF-REC-004",
+      "category": "color",
+      "recommendation": "沿用已批准品牌主色，并为正文与背景保留明确明度对比。",
+      "based_on": ["必须使用 MomoRay 品牌素材", "说明内容需要快速阅读"],
+      "benefit": "兼顾品牌一致性和说明信息的识别速度。",
+      "tradeoff": "实际印刷颜色仍依赖色彩模式、纸张和打样结果。",
+      "confidence": "medium",
+      "requires_user_confirmation": true
+    },
+    {
+      "recommendation_id": "MF-REC-005",
+      "category": "layout_readability",
+      "recommendation": "将垫片数量、睡姿提示和调整步骤分成三个可扫描的信息区块。",
+      "based_on": ["核心内容包含垫片数量、睡姿提示和调整步骤", "用户在开箱场景中阅读"],
+      "benefit": "降低用户查找关键操作信息的时间。",
+      "tradeoff": "分区会占用更多版面，可能需要压缩装饰内容。",
+      "confidence": "high",
+      "requires_user_confirmation": false
+    },
+    {
+      "recommendation_id": "MF-REC-006",
+      "category": "production_path",
+      "recommendation": "先完成可编辑版式，再分别导出印刷 PDF 与 SVG 刀线，SVG 通过 Pre-import Gate 后再进入 xTool Studio。[待实际验证]",
+      "based_on": ["印刷输出：Print-ready PDF", "矢量/刀线输出：SVG"],
+      "benefit": "把印刷内容、刀线和软件交接责任分开，便于定位问题。",
+      "tradeoff": "需要维护多个关联文件版本和复检记录。",
+      "confidence": "medium",
+      "requires_user_confirmation": true
+    },
+    {
+      "recommendation_id": "MF-REC-007",
+      "category": "output_format",
+      "recommendation": "印刷内容保留为 PDF，刀线或可缩放矢量对象保留为 SVG。",
+      "based_on": ["印刷输出：Print-ready PDF", "矢量/刀线输出：SVG"],
+      "benefit": "让不同文件服务于明确用途，并使 Pre-import 检查范围更清楚。",
+      "tradeoff": "导出后需要核对两个文件的版本、尺寸和对应关系。",
+      "confidence": "high",
+      "requires_user_confirmation": true
+    }
+  ]
+}
+

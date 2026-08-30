@@ -1,0 +1,22 @@
+{
+  "fields": [
+    {"id":"deliverable","label":"最终交付物","value":"包装内高度调节说明卡","status":"confirmed","critical":true},
+    {"id":"purpose","label":"用途","value":"解释模块组合与对应枕高","status":"confirmed","critical":true},
+    {"id":"target_user","label":"目标用户","value":"首次使用MomoRay模块化枕头的消费者","status":"confirmed","critical":false},
+    {"id":"must_content","label":"最终需要呈现","value":"三种高度配置、每种配置的垫片数量、对应真实枕高15 / 16 / 17 cm，以及用户如何根据偏高 / 合适 / 偏低进行调整","status":"confirmed","critical":true,"source":"human_confirmation"},
+    {"id":"product_facts","label":"已确认产品事实","value":"三种模块组合分别使用0、1、2片垫片，对应真实枕高为：0 insert → 15 cm；1 insert → 16 cm；2 inserts → 17 cm。感觉偏高时可减少垫片；1片为标准配置，适合作为默认起点；感觉偏低时可增加垫片。身高偏矮或偏高仅作为辅助理解场景，不构成精确医学匹配规则。","status":"confirmed","critical":true,"source":"MomoRay product owner / project confirmed data","evidence":["Human Confirmed Product Fact"]},
+    {"id":"form","label":"形式","value":"双面矩形说明卡","status":"assumed","critical":false},
+    {"id":"material_direction","label":"材料方向","value":"未涂布纸或卡纸，具体克重由制作方确认","status":"assumed","critical":false},
+    {"id":"color_direction","label":"颜色方向","value":"黑白灰，保证高对比度","status":"assumed","critical":false},
+    {"id":"output_format","label":"输出格式","value":"印刷PDF + 刀线/标记SVG","status":"confirmed","critical":false},
+    {"id":"maker_source","label":"制作要求来源（可选）","value":"外部打样供应商","status":"assumed","critical":false,"advanced":true}
+  ],
+  "finished_size": { "preset_size":"A6", "width":148, "height":105, "unit":"mm", "status":"confirmed", "source":"preset" },
+  "visual_aid_requirement": {
+    "status":"required",
+    "purposes":["explain_structure","explain_steps"],
+    "preferred_type":"let_system_recommend",
+    "note":"",
+    "field_status":"confirmed"
+  }
+}
