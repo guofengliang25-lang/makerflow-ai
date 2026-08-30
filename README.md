@@ -1,59 +1,97 @@
 # MakerFlow AI
 
-> 当前阶段：V3-W1-D04｜项目定义  
-> 当前状态：尚未进入 W3 开发阶段
+MakerFlow 是面向初级 Maker / 设计学生的可制作作品助手：把模糊想法转成结构化设计约束，形成可编辑矢量作品，并在导出前完成确定性预检与问题路由。
 
-## 一句话定位
+> 当前状态：功能原型，可本地运行。DeepSeek 是实验性 Provider，不代表最终模型选型。
 
-MakerFlow AI 是一个围绕创意需求澄清、Creative Brief 生成与可验证交付展开的 AI 产品项目。
+## Current Demo
 
-## 当前阶段目标
+当前 Demo 已实现一条面向单一场景的浏览器流程：
 
-本阶段只完成项目定义和验证准备：
+- 通过 DeepSeek 执行真实 `brief.extract`；
+- 通过 DeepSeek 执行真实 `brief.ask_missing`，并由用户补充缺失信息；
+- Human Brief Confirm：关键约束满足规则后仍需用户确认 Brief；
+- 通过 DeepSeek 执行真实 `plan.generate`；
+- Human Plan Decision：建议只有经用户接受后才能进入 Design Spec；
+- Design Spec → SVG，并在浏览器中形成可编辑矢量作品；
+- Artifact revision、Preflight 绑定及内容变化后的 stale invalidation；
+- MakerFlow Preflight：SVG File Check、Brief Consistency Check、Studio Readiness Checklist；
+- BLOCK 路由与 revision-bound WARN Human Gate；
+- SVG partial export；PDF 当前为 unsupported，不把浏览器打印视为 Verified PDF。
 
-- 明确产品服务的用户、问题和核心场景；
-- 形成一页产品 Brief；
-- 选择能够证明产品能力的自证物；
-- 规划设备、软件及关键流程的验证路径；
-- 完成 W1 阶段复盘。
+该原型不代表 MakerFlow 已上线、已有真实用户或已经提升效率、降低返工。
 
-## 当前交付物
+## Demo Scenario
 
-| 文档 | 用途 |
-|---|---|
-| [01_MakerFlow一页Brief.md](docs/01_MakerFlow一页Brief.md) | 定义产品问题、目标用户、方案边界和成功标准 |
-| [02_自证物选择表.md](docs/02_自证物选择表.md) | 选择能够证明产品判断与能力的证据 |
-| [03_设备软件验证路径.md](docs/03_设备软件验证路径.md) | 规划后续产品验证环境、流程和取证方式 |
-| [04_W1复盘.md](docs/04_W1复盘.md) | 汇总本周产出、判断、风险与下一步 |
+当前 MVP 验证 MomoRay 模块化枕头高度调节说明卡：
 
-## 目录说明
+| 配置 | 真实枕高 |
+|---|---:|
+| 0 inserts | 15 cm |
+| 1 insert | 16 cm |
+| 2 inserts | 17 cm |
 
-| 目录 | 当前用途 |
-|---|---|
-| `docs/` | 项目定义和阶段复盘 |
-| `research/` | 后续用户研究、竞品分析和访谈资料 |
-| `evidence/` | 后续保存真实截图、录屏、日志和测试报告 |
-| `mocks/` | 后续保存本地 Mock 数据；当前不实现 |
-| `src/` | W3 开发阶段的产品源码；当前不创建实现 |
+当前 Demo 选择 A6 preset，由确定性规则规范化为 `148 × 105 mm`。这些高度数据来自项目方人工确认；Demo 不把用户身高推断为医学匹配规则。
 
-## 阶段边界
+## Architecture
 
-本阶段不进行以下工作：
+```text
+Browser
+  → Node server
+  → DeepSeek Experimental Provider
+  → Model / Rule / Tool / Human
+  → Artifact / Preflight / Export
+```
 
-- 不创建 Web 前端；
-- 不创建 API 服务；
-- 不接入 OpenAI 或其他模型供应商；
-- 不生成可被误认为真实测试结果的 Mock 证据；
-- 不提前实现 SVG Checker 或 Ask-vs-Act；
-- 不把尚未执行的验证描述为已完成。
+浏览器不会直接调用 DeepSeek。API Key 只由 Node 服务从环境变量读取。确定性规则负责 Brief validation、SVG render/check、Artifact revision、Preflight 和 Export gate；模型不决定真实设备、材料或加工参数。
 
-## 下一阶段进入条件
+架构、产品和评估文档入口见 [docs/README.md](docs/README.md)。部署说明见 [DEPLOY.md](DEPLOY.md)。
 
-进入后续原型或开发阶段前，应至少确认：
+## Eval
 
-- [ ] 一页 Brief 中的目标用户、核心问题与 MVP 边界已确认；
-- [ ] 首批自证物及其验收标准已确认；
-- [ ] 设备和软件验证路径可执行；
-- [ ] 关键产品假设、风险和待验证问题已记录；
-- [ ] W1 复盘已完成。
+当前 Contract baseline：
 
+- 7 PASS
+- 0 FAIL
+- 5 SKIPPED_PROVIDER_REQUIRED
+
+这是当前 Contract Eval 的执行结果，不是模型准确率，也不证明真实用户价值、生产成功率或最终模型选型。
+
+## Local Run
+
+要求 Node.js `>=24 <25`。
+
+```bash
+npm install
+npm start
+```
+
+在本地 `.env` 中配置：
+
+```text
+DEEPSEEK_API_KEY=<your key>
+```
+
+`.env` 与真实 Provider 运行产物已被 Git 忽略。启动后默认访问：
+
+- Demo: `http://localhost:8000/`
+- QA: `http://localhost:8000/?qa=1`
+- Health: `http://localhost:8000/health`
+
+## Public Demo
+
+Coming Soon — Render deployment pending.
+
+## Known Limitations
+
+- PDF unsupported；当前只可靠支持 SVG partial export；
+- 没有 AImake、xTool Studio 或制造设备的原生集成；
+- 不控制设备，不自动决定功率、速度、次数或安全参数；
+- PASS 只表示通过 MakerFlow 当前规则，不等于 Studio Ready 或保证加工成功；
+- 不包含 Multi-Agent、RAG 或长期 Memory；
+- DeepSeek 是 Experimental Provider，尚未成为最终模型选型；
+- 当前 MVP 只验证一个主要 MomoRay 场景。
+
+## Repository Boundaries
+
+本仓库保留产品定义、研究证据、Task Graph、Skill Contracts、Prompt、Eval、Provider、Prototype 与部署资产。早期 W1/W2 文档作为产品演进记录公开保留，但不代表当前实现；纯内部交接包、上下文包和 Codex 执行计划不进入公开仓库。

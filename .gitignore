@@ -4,3 +4,7 @@
 # Local real-provider smoke artifacts may contain user/model content.
 evals/artifacts/deepseek/
 
+# Internal handoff and execution context retained only in the local workspace.
+MakerFlow_项目交接包_2026-08-16/
+docs/MakerFlow_PRD_KSRD_Context_Pack.md
+docs/superpowers/plans/
