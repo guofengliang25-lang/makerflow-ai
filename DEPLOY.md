@@ -1,105 +1,91 @@
-# MakerFlow GitHub / Render 部署说明
+# MakerFlow Vercel 部署说明
 
-本文仅说明当前Node服务与静态Prototype的发布方式。不要提交API Key、`.env`或真实Provider运行产物。
+MakerFlow 当前使用同一仓库同时发布静态 Prototype 与 Node Functions。部署适配不改变本地 `server.mjs`、产品状态规则、Prompt 或 Provider 行为。
 
-## 1. 安全初始化Git仓库
-
-当前建议把`MakerFlow-AI`目录本身作为独立仓库根，不要在其父级学习计划目录运行`git init`。
-
-进入MakerFlow项目目录后执行：
-
-```powershell
-git init
-git rev-parse --show-toplevel
-git status --ignored
-```
-
-确认`git rev-parse --show-toplevel`指向`MakerFlow-AI`，并确认以下内容显示为ignored：
-
-- `.env`
-- `.env.*`
-- `evals/artifacts/deepseek/`
-
-再执行：
-
-```powershell
-git add .
-git status
-git commit -m "Prepare MakerFlow demo for deployment"
-```
-
-提交前再次确认暂存区不包含上述敏感文件和运行产物。
-
-## 2. 推送到GitHub
-
-先在GitHub创建一个空仓库，不要让GitHub预先生成README或`.gitignore`，然后在本地执行：
-
-```powershell
-git branch -M main
-git remote add origin <YOUR_GITHUB_REPOSITORY_URL>
-git push -u origin main
-```
-
-`<YOUR_GITHUB_REPOSITORY_URL>`需要替换为你创建的仓库地址。不要把API Key放入remote URL、提交记录或仓库文件。
-
-## 3. Render配置
-
-在Render创建Web Service并连接GitHub仓库：
-
-| 配置项 | 值 |
-|---|---|
-| Runtime | Node |
-| Node版本 | `>=24 <25`（由`package.json`声明） |
-| Root Directory | 留空或`.`（MakerFlow-AI是独立仓库根时） |
-| Build Command | `npm install` |
-| Start Command | `npm start` |
-| Health Check Path | `/health` |
-
-如果未来选择把整个学习计划目录作为一个仓库，Render的Root Directory才应填写`projects/MakerFlow-AI`。当前不建议这样初始化，因为会扩大提交范围。
-
-## 4. 环境变量
-
-在Render服务的Environment设置中新增：
+## Architecture
 
 ```text
-DEEPSEEK_API_KEY=<在Render控制台填写真实值>
+Browser
+  → same-origin /api/*
+  → Vercel Node Function
+  → existing MakerFlow executor
+  → Provider Adapter
+  → DeepSeek Experimental Provider
 ```
 
-不要把真实值写进：
+Vercel函数复用仓库现有的三个executor：
 
-- GitHub仓库；
-- Render配置文件；
-- `.env.example`；
-- Browser代码；
-- 日志、测试fixture或Eval报告。
+- `providers/brief-extract-executor.mjs`
+- `providers/brief-ask-missing-executor.mjs`
+- `providers/plan-generate-executor.mjs`
 
-服务端只通过`process.env.DEEPSEEK_API_KEY`读取密钥。缺少密钥时Model请求会Fail Closed；`GET /health`仍只返回公共健康状态。
+浏览器继续使用相对同源URL，不直接访问DeepSeek。
 
-Render会提供`PORT`。服务使用`process.env.PORT || 8000`并监听`0.0.0.0`；本地默认仍可通过`http://localhost:8000/`访问。
+## Vercel Routes
 
-## 5. 部署后验证
+| Public route | Implementation |
+|---|---|
+| `/` | `prototype/index.html`（`prototype`是静态输出目录） |
+| `/api/skills/brief.extract` | `api/skills/[skill].mjs` |
+| `/api/skills/brief.ask_missing` | `api/skills/[skill].mjs` |
+| `/api/skills/plan.generate` | `api/skills/[skill].mjs` |
+| `/health` | rewrite到`/api/health` |
 
-部署完成后依次验证：
+## Import GitHub Project
 
-1. 访问`https://<render-service-domain>/health`，应返回：
+1. 登录Vercel Dashboard。
+2. 选择 **Add New → Project**。
+3. 导入GitHub仓库 `guofengliang25-lang/makerflow-ai`。
+4. 保持 **Root Directory** 为仓库根目录 `.`。
+5. Framework Preset选择 **Other**（若Vercel已自动识别为Other则不改）。
+6. 不需要填写自定义Build Command；静态目录由`vercel.json`中的`outputDirectory: prototype`指定。
+7. 在 **Environment Variables** 中添加变量名 `DEEPSEEK_API_KEY`，由Human在Vercel Dashboard填写真实值。
+8. 将变量至少应用到Production；若要测试Preview Deployment，也需要显式应用到Preview。
+9. 点击 **Deploy**。
+
+不要把API Key填入`vercel.json`、源码、GitHub文件、Build Command或公开日志。
+
+## Deployment Verification
+
+部署完成后检查：
+
+1. 打开 `https://<project>.vercel.app/`，应显示MakerFlow Demo。
+2. 打开 `https://<project>.vercel.app/health`，应返回：
 
    ```json
    {"ok":true}
    ```
 
-2. 打开Render公开URL，确认静态Prototype正常加载。
-3. 用一条非敏感测试输入验证`brief.extract`请求。
-4. 检查浏览器Network与页面内容，确认没有API Key、Authorization header或内部错误栈被返回。
-5. 检查Render日志，确认日志中没有凭据内容。
+3. 在普通Demo完成一次非敏感的`brief.extract`请求。
+4. 确认Provider失败时UI停留在当前步骤且不载入fixture。
+5. 在浏览器Network响应中确认不存在API Key、Authorization header或内部stack trace。
 
-## 6. 发布前检查
+## Local Compatibility
 
-每次Push前建议执行：
+本地运行方式保持不变：
 
 ```powershell
-npm test
-git status --ignored
-git diff --cached
+node --env-file=.env server.mjs
 ```
 
-任何真实DeepSeek raw artifact都应保留在本地ignored目录，不进入GitHub。
+或在环境变量已经由当前Shell提供时运行：
+
+```powershell
+npm start
+```
+
+默认地址：
+
+- Demo：`http://localhost:8000/`
+- QA：`http://localhost:8000/?qa=1`
+- Health：`http://localhost:8000/health`
+
+## Optional Local Vercel Verification
+
+若本机已经安装Vercel CLI，可运行：
+
+```powershell
+vercel dev
+```
+
+当前仓库不把Vercel CLI加入产品依赖，也不要求全局安装后才能使用本地MakerFlow Demo。

@@ -80,7 +80,7 @@ DEEPSEEK_API_KEY=<your key>
 
 ## Public Demo
 
-Coming Soon — Render deployment pending.
+Coming Soon — Vercel deployment pending.
 
 ## Known Limitations
 

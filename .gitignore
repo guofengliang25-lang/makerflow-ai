@@ -8,3 +8,6 @@ evals/artifacts/deepseek/
 MakerFlow_项目交接包_2026-08-16/
 docs/MakerFlow_PRD_KSRD_Context_Pack.md
 docs/superpowers/plans/
+
+# Local Vercel project metadata.
+.vercel/
