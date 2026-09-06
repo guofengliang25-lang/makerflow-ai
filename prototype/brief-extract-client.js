@@ -1,11 +1,12 @@
 import {BRIEF_CRITICAL_FIELD_IDS} from "./brief-validate.js";
+import { applyClarificationAnswers } from "./brief-ui-state.js";
 const isCritical=id=>BRIEF_CRITICAL_FIELD_IDS.includes(id);
 const FIELD_CATALOG = [
   ["deliverable", "最终交付物", isCritical("deliverable")],
   ["purpose", "用途", isCritical("purpose")],
   ["target_user", "目标用户", false],
-  ["must_content", "最终需要呈现", isCritical("must_content")],
-  ["product_facts", "已确认产品事实", isCritical("product_facts")],
+  ["must_content", "说明卡必须包含", isCritical("must_content")],
+  ["product_facts", "产品事实", isCritical("product_facts")],
   ["form", "形式", false],
   ["material_direction", "材料方向", false],
   ["color_direction", "颜色方向", false],
@@ -79,13 +80,14 @@ export async function requestMissingQuestions({briefCandidate,validationResult,c
 function mergeClarification(previous,incoming){
   const next=structuredClone(incoming),map=new Map((next.fields||[]).map(f=>[f.id,f]));
   for(const old of previous.fields||[]){if(old.status==="confirmed")map.set(old.id,structuredClone(old));else if(!map.has(old.id))map.set(old.id,structuredClone(old));}
-  next.fields=[...map.values()];next.brief_revision=previous.brief_revision;next.lifecycle="draft";return next;
+  next.fields=[...map.values()];
+  if(previous.finished_size?.status==="confirmed")next.finished_size=structuredClone(previous.finished_size);
+  if(previous.visual_aid_requirement?.field_status==="confirmed")next.visual_aid_requirement=structuredClone(previous.visual_aid_requirement);
+  next.brief_revision=previous.brief_revision;next.lifecycle="draft";return next;
 }
 
 function applyExplicitClarification(candidate,answers){
-  const next=structuredClone(candidate),sizeAnswer=answers.find(item=>item.field_id==="finished_size");
-  if(sizeAnswer){const match=String(sizeAnswer.answer).match(/(\d+(?:\.\d+)?)\s*[×xX*]\s*(\d+(?:\.\d+)?)\s*(mm|cm)?/i);if(match)next.finished_size={preset_size:"custom",width:Number(match[1]),height:Number(match[2]),unit:(match[3]||"mm").toLowerCase(),status:"confirmed",source:"human_clarification"};}
-  return next;
+  return applyClarificationAnswers(candidate,answers);
 }
 
 export async function clarifyAndValidateBrief({originalUserInput,previousBrief,answers,attachments=[],fetchImpl=globalThis.fetch,validateBrief}){
@@ -115,7 +117,7 @@ export function prepareBriefForEditor(candidate, validationResult = {}) {
       preset_size: "custom", width: "", height: "", unit: "mm", status: "missing"
     }),
     visual_aid_requirement: structuredClone(candidate.visual_aid_requirement || {
-      status: "undecided", purposes: [], preferred_type: "let_system_recommend", note: "", field_status: "needs_confirmation"
+      status: "required", purposes: ["explain_structure", "explain_steps"], preferred_type: "let_system_recommend", note: "", field_status: "confirmed"
     }),
     confirmed: false,
     confirmedAt: null

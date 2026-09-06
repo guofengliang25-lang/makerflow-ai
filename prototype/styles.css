@@ -135,6 +135,18 @@ textarea { min-height: 100px; resize: vertical; }
 .text-button { margin-top: 12px; padding: 0; border: 0; background: transparent; text-decoration: underline; cursor: pointer; }
 .plan-primary-action { margin-top: 24px; padding: 20px; text-align: center; background: var(--soft); }
 .plan-primary-action p { margin: 10px 0 0; color: var(--muted); }
+.clarification-only { max-width: 760px; margin: 28px auto 0; }
+.clarification-question, .manual-missing { display: grid; gap: 8px; margin-top: 14px; padding: 16px; border: 1px solid var(--line); background: var(--soft); }
+.clarification-question label, .manual-missing label, .brief-review-grid label { display: grid; gap: 7px; }
+.manual-missing .brief-section { padding: 0; border: 0; background: transparent; }
+.brief-review { margin-top: 22px; }
+.brief-review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0; }
+.brief-review-grid label:nth-child(3), .brief-review-grid label:nth-child(4) { grid-column: 1 / -1; }
+.brief-review-grid textarea { min-height: 82px; }
+.recommendation-card { grid-template-columns: minmax(280px,1.2fr) minmax(220px,.8fr) 240px; }
+.recommendation-main p { margin: 8px 0 12px; color: var(--muted); }
+.recommendation-card details { align-self: start; }
+.recommendation-card details p { margin: 10px 0; }
 /* SVG-first Create & Edit */
 .create-edit-grid { display: grid; grid-template-columns: 190px minmax(600px, 1fr) 280px; gap: 12px; margin-top: 12px; align-items: stretch; min-height: 650px; }
 .structure-panel, .design-work, .property-panel { min-width: 0; padding: 16px; border: 1px solid var(--line); background: var(--surface); }

@@ -28,7 +28,7 @@ export function normalizeFinishedSize(size = {}) {
     width,
     height,
     unit:size.unit||"mm",
-    status:width&&height&&FIELD_STATUSES.has(size.status)?size.status:width&&height?"needs_confirmation":"missing"
+    status:width&&height&&size.status==="confirmed"?"confirmed":width&&height?"needs_confirmation":"missing"
   };
 }
 
