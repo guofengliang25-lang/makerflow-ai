@@ -77,11 +77,12 @@ export async function requestMissingQuestions({briefCandidate,validationResult,c
   }catch{return{ok:false,error:{code:"NETWORK_ERROR",message:"问题生成失败，请重试或手工编辑。"}}}
 }
 
-function mergeClarification(previous,incoming){
+export function mergeClarification(previous,incoming,currentAnswers=[]){
   const next=structuredClone(incoming),map=new Map((next.fields||[]).map(f=>[f.id,f]));
-  for(const old of previous.fields||[]){if(old.status==="confirmed")map.set(old.id,structuredClone(old));else if(!map.has(old.id))map.set(old.id,structuredClone(old));}
+  const answered=new Set(currentAnswers.map(item=>String(item.field_id).split('.')[0]));
+  for(const old of previous.fields||[]){const frozen=previous.lifecycle==="confirmed";const protectedContext=(old.status==="confirmed"||String(old.source||'').startsWith('human'))&&String(old.value||'').trim();if(frozen||protectedContext&&!answered.has(old.id))map.set(old.id,structuredClone(old));else if(!map.has(old.id))map.set(old.id,structuredClone(old));}
   next.fields=[...map.values()];
-  if(previous.finished_size?.status==="confirmed")next.finished_size=structuredClone(previous.finished_size);
+  if(previous.lifecycle==="confirmed"||previous.finished_size?.source?.startsWith?.("human")&&!answered.has("finished_size"))next.finished_size=structuredClone(previous.finished_size);
   if(previous.visual_aid_requirement?.field_status==="confirmed")next.visual_aid_requirement=structuredClone(previous.visual_aid_requirement);
   next.brief_revision=previous.brief_revision;next.lifecycle="draft";return next;
 }
@@ -94,7 +95,7 @@ export async function clarifyAndValidateBrief({originalUserInput,previousBrief,a
   let response,envelope;
   try{response=await fetchImpl("./api/skills/brief.extract",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"clarification",user_input:answers.map(a=>a.answer).join("\n"),original_user_input:originalUserInput,attachments,clarification_answers:answers,existing_confirmed_context:{fields:(previousBrief.fields||[]).filter(f=>f.status==="confirmed")}})});envelope=await response.json();}catch{return{ok:false,error:{code:"NETWORK_ERROR",message:"补充信息处理失败，请重试。"}}}
   if(!response.ok||!envelope.ok)return{ok:false,error:envelope.error||{code:"REQUEST_FAILED",message:"补充信息处理失败，请重试。"}};
-  const merged=applyExplicitClarification(mergeClarification(previousBrief,envelope.brief_candidate),answers),validation=validateBrief({brief_candidate:merged}).brief_validation_result;
+  const merged=applyExplicitClarification(mergeClarification(previousBrief,envelope.brief_candidate,answers),answers),validation=validateBrief({brief_candidate:merged}).brief_validation_result;
   return{ok:true,brief_candidate:merged,brief_validation_result:validation,trace:sanitizeModelTrace(envelope.trace)};
 }
 

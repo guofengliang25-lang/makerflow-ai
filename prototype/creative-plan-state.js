@@ -6,7 +6,15 @@ export function createCreativePlanState(plan) {
   return { plan: clone(plan), lifecycle: "active", stale: false, decisions: Object.fromEntries(plan.recommendations.map(item => [item.recommendation_id, { status: "pending", edited_suggestion: null }])), decision_log: [] };
 }
 
+export function reconcileCreativePlanState(state={}){
+  const next=clone(state),current=next.decisions||{},ids=(next.plan?.recommendations||[]).map(item=>item.recommendation_id);
+  next.decisions=Object.fromEntries(ids.map(id=>[id,current[id]||{status:"pending",edited_suggestion:null}]));
+  next.decision_log=next.decision_log||[];
+  return next;
+}
+
 export function recordPlanDecision(state, { recommendationId, action, actor, editedSuggestion = null }) {
+  state=reconcileCreativePlanState(state);
   if (actor !== "human") throw new Error("HUMAN_ACTION_REQUIRED");
   if (!state.decisions[recommendationId]) throw new Error("RECOMMENDATION_NOT_FOUND");
   const next = clone(state), decision = next.decisions[recommendationId];

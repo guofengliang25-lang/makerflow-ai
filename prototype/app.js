@@ -11,11 +11,14 @@ import { validateBrief } from "./brief-validate.js";
 import { extractAndValidateBrief, prepareBriefForEditor, requestMissingQuestions, clarifyAndValidateBrief, sanitizeModelTrace } from "./brief-extract-client.js";
 import { applyBriefValidation, confirmBrief, beginBriefRevision } from "./brief-lifecycle.js";
 import { generateCreativePlan } from "./plan-generate-client.js";
-import { createCreativePlanState, recordPlanDecision, getAcceptedPlan, syncPlanStaleness, acceptEditedRecommendation, bulkAcceptPendingRecommendations, finalizePlanReview, getConfirmedBriefPlanContext } from "./creative-plan-state.js";
-import { applyClarificationAnswers, briefUiMode, manualCriticalFieldIds } from "./brief-ui-state.js";
+import { createCreativePlanState, recordPlanDecision, getAcceptedPlan, syncPlanStaleness, acceptEditedRecommendation, bulkAcceptPendingRecommendations, finalizePlanReview, getConfirmedBriefPlanContext, reconcileCreativePlanState } from "./creative-plan-state.js";
+import { applyClarificationAnswers, applyTrustedMomoRayContext, briefUiMode, manualCriticalFieldIds } from "./brief-ui-state.js";
+import { createClarificationLedger, filterAskableBlockers, recordAskedQuestions, recordHumanAnswers } from "./clarification-ledger.js";
+import { migratePersistedState } from "./state-migration.js";
 import { evaluateHandoffCompletion } from "./handoff-state.js";
 
-const STORAGE_KEY = "makerflow.lowfi.v2";
+const STORAGE_KEY = "makerflow.lowfi.v3";
+const LEGACY_STORAGE_KEY = "makerflow.lowfi.v2";
 const IS_QA = new URLSearchParams(location.search).get("qa") === "1";
 const DATA_FILES = {
   job: "./data/job_initial.json",
@@ -27,7 +30,7 @@ const DATA_FILES = {
 };
 
 const defaultState = () => ({
-  version: 2,
+  version: 3,
   currentStep: 1,
   maxUnlockedStep: 1,
   qaScenario: "pass",
@@ -36,6 +39,7 @@ const defaultState = () => ({
   extractRequest: { loading:false, error:null, trace:null },
   briefValidation: null, briefHistory:[],
   askMissing:{loading:false,error:null,questions:[],trace:null,manualMode:false},
+  clarificationLedger:createClarificationLedger(),
   brief: { brief_revision:1,lifecycle:"draft",fields:[], confirmed:false, confirmedAt:null },
   creativePlan: { plan:null, lifecycle:"empty", stale:false, decisions:{}, decision_log:[], loading:false, error:null, trace:null, confirmed:false, confirmedAt:null, editingRecommendationId:null },
   design: { spec:null, svgString:"", source:"makerflow_template", sourceLabel:"MakerFlow模板生成", assets:[], revision:0, dirty:false, focusTarget:null, selectedElement:"title", zoom:1, pan:{x:0,y:0}, layoutUndo:null, statusMessage:"" },
@@ -58,13 +62,14 @@ qaControls.hidden = !IS_QA;
 
 function loadState() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return saved?.version === 2 ? saved : defaultState();
+    const raw=localStorage.getItem(STORAGE_KEY)||localStorage.getItem(LEGACY_STORAGE_KEY);
+    if(!raw)return defaultState();
+    return {...defaultState(),...migratePersistedState(JSON.parse(raw))};
   } catch { return defaultState(); }
 }
 
 function saveState() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state));localStorage.removeItem(LEGACY_STORAGE_KEY); }
   catch { gateMessage.textContent = "当前素材较大，浏览器无法保存全部状态；本次会话仍可继续。"; }
 }
 
@@ -78,6 +83,8 @@ async function loadFixtures() {
   if (!state.studioReadiness) state.studioReadiness = structuredClone(fixtures.projectState);
   state.job = { ...defaultState().job, ...state.job };
   state.creativePlan = { ...defaultState().creativePlan, ...state.creativePlan };
+  state.creativePlan = reconcileCreativePlanState(state.creativePlan);
+  state.clarificationLedger=state.clarificationLedger||createClarificationLedger();
   state.extractRequest = { ...defaultState().extractRequest, ...state.extractRequest, loading:false };
   state.askMissing={...defaultState().askMissing,...state.askMissing,loading:false};state.briefHistory=state.briefHistory||[];
   state.design = { ...defaultState().design, ...state.design, pan:{...defaultState().design.pan,...state.design?.pan} };
@@ -198,7 +205,7 @@ function buildDesign() {
 function revalidateCurrentBrief(){const result=validateBrief({brief_candidate:state.brief}).brief_validation_result;state.brief.finished_size=structuredClone(result.normalized_finished_size);state.briefValidation=result;state.brief=applyBriefValidation(state.brief,result);return result;}
 function ensureEditableBriefRevision(){const result=beginBriefRevision(state.brief,state.briefHistory);state.brief=result.brief;state.briefHistory=result.history;if(state.creativePlan.plan)state.creativePlan=syncPlanStaleness(state.creativePlan,state.brief.brief_revision);return result.created;}
 async function loadCreativePlan(){if(state.brief.lifecycle!=="confirmed")return;state.creativePlan={...defaultState().creativePlan,loading:true};saveState();render();const result=await generateCreativePlan({confirmedBrief:state.brief});if(!result.ok){state.creativePlan={...defaultState().creativePlan,error:result.error};saveState();render();return;}state.creativePlan={...createCreativePlanState(result.creative_plan),loading:false,error:null,trace:result.trace,confirmed:false,confirmedAt:null};saveState();render();}
-async function loadMissingQuestions(){const blockers=canonicalBriefBlockers();if(!blockers.length){state.askMissing={loading:false,error:null,questions:[],trace:null,manualMode:false};return true;}state.askMissing={loading:true,error:null,questions:[],trace:null,manualMode:false};saveState();render();const result=await requestMissingQuestions({briefCandidate:state.brief,validationResult:state.briefValidation,confirmedContext:{fields:state.brief.fields.filter(f=>f.status==="confirmed")}});state.askMissing=result.ok?{loading:false,error:null,questions:result.questions,trace:result.trace,manualMode:false}:{loading:false,error:result.error,questions:[],trace:null,manualMode:false};saveState();render();return result.ok;}
+async function loadMissingQuestions(){const blockers=canonicalBriefBlockers(),askable=filterAskableBlockers(blockers,state.clarificationLedger,state.brief);if(!askable.length){state.askMissing={loading:false,error:null,questions:[],trace:null,manualMode:false};saveState();render();return true;}const allowed=new Set(askable),validation={...state.briefValidation,missing_items:(state.briefValidation.missing_items||[]).filter(item=>allowed.has(item)),conflict_items:(state.briefValidation.conflict_items||[]).filter(item=>allowed.has(item)),critical_blockers:askable};state.askMissing={loading:true,error:null,questions:[],trace:null,manualMode:false};saveState();render();const result=await requestMissingQuestions({briefCandidate:state.brief,validationResult:validation,confirmedContext:{fields:state.brief.fields.filter(f=>f.status==="confirmed")}});if(result.ok)state.clarificationLedger=recordAskedQuestions(state.clarificationLedger,result.questions);state.askMissing=result.ok?{loading:false,error:null,questions:result.questions,trace:result.trace,manualMode:false}:{loading:false,error:result.error,questions:[],trace:null,manualMode:false};saveState();render();return result.ok;}
 
 function renderStep1() {
   const requestState=state.extractRequest;
@@ -212,20 +219,21 @@ function renderStep1() {
     <div class="action-row"><button id="loadJob" class="text-button" ${requestState.loading?'disabled':''}>体验MomoRay示例</button><button id="extractButton" class="button primary" ${requestState.loading?'disabled':''}>${requestState.loading?'正在理解你的需求…':requestState.error?'重试理解需求':'理解需求'}</button></div>`;
   document.querySelector("#description")?.addEventListener("input", event => { state.job.description = event.target.value; saveState(); });
   document.querySelector("#referenceUpload").addEventListener("change",event=>{state.job.referenceFiles=[...event.target.files].map(file=>({name:file.name,type:file.type,size:file.size}));saveState();render();});
-  document.querySelector("#loadJob").addEventListener("click", () => { const overrides=state.job.referenceFiles||[]; state.job = { ...fixtures.job, description:fixtures.job.cardPurpose, referenceFiles:overrides, sampleMode:true }; delete state.job.draft_overrides; saveState(); render(); });
+  document.querySelector("#loadJob").addEventListener("click", () => { const overrides=state.job.referenceFiles||[]; state.job = { ...fixtures.job, description:fixtures.job.cardPurpose, referenceFiles:overrides, sampleMode:true, trustedContext:"momoray_confirmed_facts_v1" }; delete state.job.draft_overrides; saveState(); render(); });
   document.querySelector("#extractButton").addEventListener("click", async () => {
     const userInput=state.job.description.trim();
     if(!userInput){state.extractRequest.error={code:"EMPTY_INPUT",message:"请先描述你要制作的作品。"};saveState();render();return;}
     state.extractRequest={loading:true,error:null,trace:null};saveState();render();
     const result=await extractAndValidateBrief({userInput,attachments:state.job.referenceFiles||[],validateBrief});
     if(!result.ok){state.extracted=false;state.extractRequest={loading:false,error:result.error,trace:null};state.maxUnlockedStep=1;saveState();render();return;}
-    state.briefValidation=result.brief_validation_result;
-    state.brief=prepareBriefForEditor(result.brief_candidate,result.brief_validation_result);
+    const candidate=state.job.trustedContext?applyTrustedMomoRayContext(result.brief_candidate):result.brief_candidate;
+    state.briefValidation=validateBrief({brief_candidate:candidate}).brief_validation_result;
+    state.brief=prepareBriefForEditor(candidate,state.briefValidation);
     state.briefValidation=validateBrief({brief_candidate:state.brief}).brief_validation_result;
     state.brief=applyBriefValidation(state.brief,state.briefValidation);state.briefHistory=[];
     state.extracted=true;
     state.extractRequest={loading:false,error:null,trace:result.trace};
-    state.creativePlan=defaultState().creativePlan;
+    state.creativePlan=defaultState().creativePlan;state.clarificationLedger=createClarificationLedger();
     state.maxUnlockedStep=2;saveState();goToStep(2);await loadMissingQuestions();
   });
 }
@@ -263,7 +271,7 @@ function renderStep2Legacy() {
 }
 
 function renderStep2() {
-  const blockers=canonicalBriefBlockers(),mode=briefUiMode(state.briefValidation,state.brief.lifecycle),ask=state.askMissing;
+  const blockers=canonicalBriefBlockers(),ask=state.askMissing,askable=filterAskableBlockers(blockers,state.clarificationLedger,state.brief),mode=blockers.length&&(ask.loading||ask.error||ask.manualMode||ask.questions?.length||askable.length)?"clarification":briefUiMode({...state.briefValidation,critical_blockers:[]},state.brief.lifecycle);
   const lifecycleLabel={draft:"草稿",ready_for_confirmation:"可确认",confirmed:"已确认",superseded:"已取代"}[state.brief.lifecycle]||state.brief.lifecycle;
   const field=id=>state.brief.fields.find(item=>item.id===id);
   const labels={deliverable:"作品类型",purpose:"说明卡要帮助用户完成什么",must_content:"说明卡必须包含",product_facts:"产品事实",target_user:"目标用户（可选）",material_direction:"材料偏好（可选）",color_direction:"指定颜色或品牌色（可选）"};
@@ -279,9 +287,9 @@ function renderStep2() {
   document.querySelector('#finished-size-preset')?.addEventListener('change',updateSize);['width','height','unit'].forEach(key=>document.querySelector(`#finished-size-${key}`)?.addEventListener('change',updateSize));
   document.querySelectorAll('[data-review-field]').forEach(control=>control.addEventListener('change',event=>{ensureEditableBriefRevision();const item=field(event.target.dataset.reviewField);item.value=event.target.value.trim();item.status=item.value?'confirmed':'missing';item.source='human_edit';revalidateCurrentBrief();saveState();render();}));
   document.querySelector('#retryAsk')?.addEventListener('click',loadMissingQuestions);
-  document.querySelector('#manualMissing')?.addEventListener('click',()=>{state.askMissing.manualMode=true;saveState();render();});
-  document.querySelector('#submitManualClarification')?.addEventListener('click',()=>{const answers=[...document.querySelectorAll('[data-manual-field]')].map(input=>({field_id:input.dataset.manualField,answer:input.value.trim()}));if(manualIds.includes('finished_size'))answers.push({field_id:'finished_size',answer:size.preset_size==='custom'?`${document.querySelector('#finished-size-width')?.value} × ${document.querySelector('#finished-size-height')?.value} ${document.querySelector('#finished-size-unit')?.value}`:document.querySelector('#finished-size-preset')?.value});state.brief=applyClarificationAnswers(state.brief,answers);revalidateCurrentBrief();state.askMissing={loading:false,error:null,questions:[],trace:null,manualMode:false};saveState();canonicalBriefBlockers().length?loadMissingQuestions():render();});
-  document.querySelector('#submitClarification')?.addEventListener('click',async()=>{const answers=[...document.querySelectorAll('[data-answer]')].map(input=>({question_id:input.dataset.answer,field_id:input.dataset.fieldId,answer:input.value.trim(),source:'human_clarification'})).filter(item=>item.answer);if(!answers.length)return;const oldBrief=structuredClone(state.brief),oldValidation=structuredClone(state.briefValidation);state.askMissing.loading=true;saveState();render();const result=await clarifyAndValidateBrief({originalUserInput:state.job.description,previousBrief:state.brief,answers,attachments:state.job.referenceFiles||[],validateBrief});if(!result.ok){state.brief=oldBrief;state.briefValidation=oldValidation;state.askMissing={loading:false,error:result.error,questions:ask.questions,trace:null,manualMode:false};saveState();render();return;}state.brief=prepareBriefForEditor(result.brief_candidate,result.brief_validation_result);revalidateCurrentBrief();state.extractRequest.trace=result.trace;state.askMissing={loading:false,error:null,questions:[],trace:null,manualMode:false};saveState();canonicalBriefBlockers().length?await loadMissingQuestions():render();});
+  document.querySelector('#manualMissing')?.addEventListener('click',()=>{state.askMissing.manualMode=true;state.askMissing.error=null;saveState();render();});
+  document.querySelector('#submitManualClarification')?.addEventListener('click',()=>{const answers=[...document.querySelectorAll('[data-manual-field]')].map(input=>({field_id:input.dataset.manualField,answer:input.value.trim()}));if(manualIds.includes('finished_size'))answers.push({field_id:'finished_size',answer:size.preset_size==='custom'?`${document.querySelector('#finished-size-width')?.value} × ${document.querySelector('#finished-size-height')?.value} ${document.querySelector('#finished-size-unit')?.value}`:document.querySelector('#finished-size-preset')?.value});state.clarificationLedger=recordHumanAnswers(state.clarificationLedger,answers);state.brief=applyClarificationAnswers(state.brief,answers);revalidateCurrentBrief();state.askMissing={loading:false,error:null,questions:[],trace:null,manualMode:false};saveState();canonicalBriefBlockers().length?loadMissingQuestions():render();});
+  document.querySelector('#submitClarification')?.addEventListener('click',async()=>{const answers=[...document.querySelectorAll('[data-answer]')].map(input=>({question_id:input.dataset.answer,field_id:input.dataset.fieldId,answer:input.value.trim(),source:'human_clarification'})).filter(item=>item.answer);if(!answers.length)return;const oldBrief=structuredClone(state.brief),oldValidation=structuredClone(state.briefValidation),oldLedger=structuredClone(state.clarificationLedger);state.clarificationLedger=recordHumanAnswers(state.clarificationLedger,answers);state.askMissing.loading=true;saveState();render();const result=await clarifyAndValidateBrief({originalUserInput:state.job.description,previousBrief:state.brief,answers,attachments:state.job.referenceFiles||[],validateBrief});if(!result.ok){state.brief=oldBrief;state.briefValidation=oldValidation;state.clarificationLedger=oldLedger;state.askMissing={loading:false,error:result.error,questions:ask.questions,trace:null,manualMode:false};saveState();render();return;}state.brief=prepareBriefForEditor(result.brief_candidate,result.brief_validation_result);revalidateCurrentBrief();state.extractRequest.trace=result.trace;state.askMissing={loading:false,error:null,questions:[],trace:null,manualMode:false};saveState();canonicalBriefBlockers().length?await loadMissingQuestions():render();});
   document.querySelector('#confirmBrief')?.addEventListener('click',async()=>{const result=confirmBrief(state.brief,state.briefValidation,state.briefHistory);if(!result.ok)return;state.brief=result.brief;state.briefHistory=result.history;state.maxUnlockedStep=Math.max(state.maxUnlockedStep,3);saveState();goToStep(3);await loadCreativePlan();});
 }
 
@@ -308,16 +316,17 @@ function renderStep3() {
   if(state.creativePlan.loading){app.innerHTML=heading(3,"创作方案 Creative Plan","正在基于已确认Brief生成候选设计决策。")+'<div class="notice info"><strong>正在生成Creative Plan…</strong></div>';return;}
   if(state.creativePlan.error){app.innerHTML=heading(3,"创作方案 Creative Plan","Brief保持已确认；失败不会载入Mock方案。")+`<div class="notice block"><strong>${escapeHtml(state.creativePlan.error.message||'无法生成Creative Plan，请重试。')}</strong></div><button id="retryPlan" class="button primary">重试</button>`;document.querySelector('#retryPlan')?.addEventListener('click',loadCreativePlan);return;}
   if(!state.creativePlan.plan){app.innerHTML=heading(3,"创作方案 Creative Plan","需要从已确认Brief生成候选设计决策。")+'<button id="retryPlan" class="button primary">生成Creative Plan</button>';document.querySelector('#retryPlan')?.addEventListener('click',loadCreativePlan);return;}
-  let context;try{context=getConfirmedBriefPlanContext(state.brief,state.creativePlan.plan);}catch{app.innerHTML=heading(3,"创作方案 Creative Plan","当前方案与已确认Brief版本不一致。")+'<div class="notice block"><strong>Brief已变化，这份方案不能继续使用。</strong><p>请基于当前已确认Brief重新生成方案。</p></div><button id="retryPlan" class="button primary">重新生成Creative Plan</button>';document.querySelector('#retryPlan')?.addEventListener('click',loadCreativePlan);return;}
+  state.creativePlan=reconcileCreativePlanState(state.creativePlan);
+  let context;try{context=getConfirmedBriefPlanContext(state.brief,state.creativePlan.plan);}catch{app.innerHTML=heading(3,"创作方案 Creative Plan","当前方案与已确认Brief版本不一致。")+'<div class="notice block"><strong>Brief已变化，这份方案不能继续使用。</strong><p>请基于当前已确认Brief重新生成方案。</p></div><button id="retryPlan" type="button" class="button primary">重新生成Creative Plan</button>';document.querySelector('#retryPlan')?.addEventListener('click',loadCreativePlan);return;}
   const titles={form:'形式与版式',information_hierarchy:'信息层级',visual_aid:'视觉辅助',color_direction:'颜色方向',material_direction:'材料方向'};
   const fieldLabels={deliverable:'作品类型',purpose:'用途',must_content:'说明卡必须包含',product_facts:'产品事实'};
   const suggestions=planRecommendations(),accepted=suggestions.filter(item=>state.creativePlan.decisions[item.recommendation_id]?.status==='accepted').length,rejected=suggestions.filter(item=>state.creativePlan.decisions[item.recommendation_id]?.status==='rejected').length,pending=pendingPlan().length;
   const locked=context.fields.filter(item=>item.status==='confirmed'&&['deliverable','purpose','must_content','product_facts'].includes(item.id)).map(item=>({label:fieldLabels[item.id]||item.label,value:item.value}));locked.push({label:'成品尺寸',value:context.finished_size.display_value});
-  const cards=suggestions.map(item=>{const d=state.creativePlan.decisions[item.recommendation_id]||{status:'pending'},editing=state.creativePlan.editingRecommendationId===item.recommendation_id,statusText={pending:'待决定',accepted:'已采用',rejected:'不采用'}[d.status];return `<article class="recommendation-card ${d.status}"><div class="recommendation-main"><span class="step-number">${escapeHtml(titles[item.decision_type]||item.decision_type)}</span><h3>${escapeHtml(d.edited_suggestion||item.suggestion)}</h3><p>${escapeHtml(item.basis||'')}</p><span class="status-badge ${d.status==='accepted'?'pass':d.status==='rejected'?'block':'info'}">${statusText}</span>${IS_QA?`<span class="status-badge info">confidence ${escapeHtml(item.confidence)}</span>`:''}</div><details><summary>为什么？</summary><p><strong>依据：</strong>${escapeHtml(item.basis||'')}</p><p><strong>取舍：</strong>${escapeHtml(item.tradeoff||'')}</p></details><div class="decision-box">${d.status==='pending'?`<div class="decision-buttons"><button class="button secondary" data-plan-action="accept" data-rec="${item.recommendation_id}">采用</button><button class="button secondary" data-plan-action="adjust" data-rec="${item.recommendation_id}">调整</button><button class="button secondary" data-plan-action="reject" data-rec="${item.recommendation_id}">不采用</button></div>`:`<button class="text-button" data-plan-action="reconsider" data-rec="${item.recommendation_id}">重新考虑</button>`}${editing?`<label>你希望怎么调整？<textarea data-plan-edit="${item.recommendation_id}">${escapeHtml(d.edited_suggestion||item.suggestion)}</textarea></label><button class="button primary" data-save-edit="${item.recommendation_id}">保存并采用</button>`:''}</div></article>`;}).join('');
-  app.innerHTML=heading(3,'创作方案 Creative Plan','确认尚未确定的设计方向；下一步会建立Design Spec并生成可编辑SVG。',`<span class="status-badge ${pending?'warn':'pass'}">${pending}项待决定</span>`)+`<section class="locked-constraints"><h3>已锁定约束</h3><p class="muted">只读取当前已确认Brief r${context.brief_revision}，不会重新建议。</p><dl>${locked.map(item=>`<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(item.value||'')}</dd></div>`).join('')}</dl></section><section><h3>待决策建议</h3><div class="decision-summary"><span>已采用 <strong>${accepted}</strong></span><span>待确认 <strong>${pending}</strong></span>${rejected?`<span>不采用 <strong>${rejected}</strong></span>`:''}</div><div class="cards">${cards}</div></section>${IS_QA?`<details><summary>QA：Model Trace</summary><pre>${escapeHtml(JSON.stringify({...state.creativePlan.trace,source_brief_revision:state.creativePlan.plan.source_brief_revision},null,2))}</pre></details>`:''}<div class="plan-primary-action"><button id="confirmPlan" class="button primary">采用当前方案并继续</button><p>未调整或拒绝的待定建议将由你的这次点击统一采用；已拒绝项不会进入Design Spec。</p></div>`;
-  document.querySelectorAll('[data-plan-action]').forEach(button=>button.addEventListener('click',()=>{const action=button.dataset.planAction,id=button.dataset.rec;if(action==='adjust'){state.creativePlan.editingRecommendationId=id;}else{state.creativePlan=recordPlanDecision(state.creativePlan,{recommendationId:id,action,actor:'human'});state.creativePlan.editingRecommendationId=null;}state.creativePlan.confirmed=false;saveState();render();}));
-  document.querySelectorAll('[data-save-edit]').forEach(button=>button.addEventListener('click',()=>{const input=document.querySelector(`[data-plan-edit="${button.dataset.saveEdit}"]`),value=input?.value.trim();if(!value)return;state.creativePlan=acceptEditedRecommendation(state.creativePlan,{recommendationId:button.dataset.saveEdit,editedSuggestion:value,actor:'human'});state.creativePlan.editingRecommendationId=null;state.creativePlan.confirmed=false;saveState();render();}));
-  document.querySelector('#confirmPlan')?.addEventListener('click',()=>{state.creativePlan=bulkAcceptPendingRecommendations(state.creativePlan,{actor:'human'});state.creativePlan=finalizePlanReview(state.creativePlan,{actor:'human'});buildDesign();saveState();goToStep(4);});
+  const cards=suggestions.map(item=>{const d=state.creativePlan.decisions[item.recommendation_id]||{status:'pending'},editing=state.creativePlan.editingRecommendationId===item.recommendation_id,statusText={pending:'待决定',accepted:'已采用',rejected:'不采用'}[d.status];return `<article class="recommendation-card ${d.status}"><div class="recommendation-main"><span class="step-number">${escapeHtml(titles[item.decision_type]||item.decision_type)}</span><h3>${escapeHtml(d.edited_suggestion||item.suggestion)}</h3><p>${escapeHtml(item.basis||'')}</p><span class="status-badge ${d.status==='accepted'?'pass':d.status==='rejected'?'block':'info'}">${statusText}</span>${IS_QA?`<span class="status-badge info">confidence ${escapeHtml(item.confidence)}</span>`:''}</div><details><summary>为什么？</summary><p><strong>依据：</strong>${escapeHtml(item.basis||'')}</p><p><strong>取舍：</strong>${escapeHtml(item.tradeoff||'')}</p></details><div class="decision-box">${d.status==='pending'?`<div class="decision-buttons"><button type="button" class="button secondary" data-plan-action="accept" data-rec="${item.recommendation_id}">采用</button><button type="button" class="button secondary" data-plan-action="adjust" data-rec="${item.recommendation_id}">调整</button><button type="button" class="button secondary" data-plan-action="reject" data-rec="${item.recommendation_id}">不采用</button></div>`:`<button type="button" class="text-button" data-plan-action="reconsider" data-rec="${item.recommendation_id}">重新考虑</button>`}${editing?`<label>你希望怎么调整？<textarea data-plan-edit="${item.recommendation_id}">${escapeHtml(d.edited_suggestion||item.suggestion)}</textarea></label><button type="button" class="button primary" data-save-edit="${item.recommendation_id}">保存并采用</button>`:''}</div></article>`;}).join('');
+  app.innerHTML=heading(3,'创作方案 Creative Plan','确认尚未确定的设计方向；下一步会建立Design Spec并生成可编辑SVG。',`<span class="status-badge ${pending?'warn':'pass'}">${pending}项待决定</span>`)+`${state.creativePlan.interactionError?`<div class="notice block"><strong>操作失败，请重试</strong>${IS_QA?`<p>${escapeHtml(state.creativePlan.interactionError)}</p>`:''}</div>`:''}<section class="locked-constraints"><h3>已锁定约束</h3><p class="muted">只读取当前已确认Brief r${context.brief_revision}，不会重新建议。</p><dl>${locked.map(item=>`<div><dt>${escapeHtml(item.label)}</dt><dd>${escapeHtml(item.value||'')}</dd></div>`).join('')}</dl></section><section><h3>待决策建议</h3><div class="decision-summary"><span>已采用 <strong>${accepted}</strong></span><span>待确认 <strong>${pending}</strong></span>${rejected?`<span>不采用 <strong>${rejected}</strong></span>`:''}</div><div class="cards">${cards}</div></section>${IS_QA?`<details><summary>QA：Model Trace</summary><pre>${escapeHtml(JSON.stringify({...state.creativePlan.trace,source_brief_revision:state.creativePlan.plan.source_brief_revision},null,2))}</pre></details>`:''}<div class="plan-primary-action"><button id="confirmPlan" type="button" class="button primary">采用当前方案并继续</button><p>未调整或拒绝的待定建议将由你的这次点击统一采用；已拒绝项不会进入Design Spec。</p></div>`;
+  document.querySelectorAll('[data-plan-action]').forEach(button=>{button.type='button';button.addEventListener('click',()=>{try{const action=button.dataset.planAction,id=button.dataset.rec;if(action==='adjust'){state.creativePlan.editingRecommendationId=id;}else{state.creativePlan=recordPlanDecision(state.creativePlan,{recommendationId:id,action,actor:'human'});state.creativePlan.editingRecommendationId=null;}state.creativePlan.interactionError=null;state.creativePlan.confirmed=false;}catch(error){state.creativePlan.interactionError=error.code||error.message||'PLAN_DECISION_FAILED';}saveState();render();});});
+  document.querySelectorAll('[data-save-edit]').forEach(button=>{button.type='button';button.addEventListener('click',()=>{try{const input=document.querySelector(`[data-plan-edit="${button.dataset.saveEdit}"]`),value=input?.value.trim();if(!value)return;state.creativePlan=acceptEditedRecommendation(state.creativePlan,{recommendationId:button.dataset.saveEdit,editedSuggestion:value,actor:'human'});state.creativePlan.editingRecommendationId=null;state.creativePlan.interactionError=null;state.creativePlan.confirmed=false;}catch(error){state.creativePlan.interactionError=error.code||error.message||'PLAN_DECISION_FAILED';}saveState();render();});});
+  document.querySelector('#confirmPlan')?.addEventListener('click',()=>{try{state.creativePlan=bulkAcceptPendingRecommendations(state.creativePlan,{actor:'human'});state.creativePlan=finalizePlanReview(state.creativePlan,{actor:'human'});buildDesign();state.creativePlan.interactionError=null;saveState();goToStep(4);}catch(error){state.creativePlan.interactionError=error.code||error.message||'PLAN_FINALIZE_FAILED';saveState();render();}});
 }
 
 function editControls() {
@@ -472,7 +481,7 @@ function render() {
 }
 
 scenarioSelect.addEventListener("change",event=>{state.qaScenario=event.target.value;if(state.currentStep>5)state.currentStep=5;saveState();render();});
-resetButton.addEventListener("click",()=>{localStorage.removeItem(STORAGE_KEY);state=defaultState();state.studioReadiness=structuredClone(fixtures.projectState);render();});
+resetButton.addEventListener("click",()=>{localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(LEGACY_STORAGE_KEY);state=defaultState();state.studioReadiness=structuredClone(fixtures.projectState);render();});
 prevButton.addEventListener("click",()=>goToStep(state.currentStep-1));
 nextButton.addEventListener("click",()=>{if(!gateForNext())unlockNext();});
 document.querySelectorAll(".stepper button").forEach(button=>button.addEventListener("click",()=>goToStep(Number(button.dataset.step))));
