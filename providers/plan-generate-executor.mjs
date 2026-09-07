@@ -38,17 +38,19 @@ function lockedContext(brief) {
 }
 function fieldsValue(brief, id) { return fieldMap(brief).get(id)?.value ?? null; }
 
-export async function executePlanGenerate({ confirmedBrief, env = process.env, fetchImpl = globalThis.fetch, runId = randomUUID() } = {}) {
+export async function executePlanGenerate({ confirmedBrief, mode="generate_plan", decisionType=null, rejectedRecommendation=null, previousRejectedSuggestions=[], env = process.env, fetchImpl = globalThis.fetch, runId = randomUUID() } = {}) {
   if (!confirmedBrief || confirmedBrief.lifecycle !== "confirmed" || !Number.isInteger(confirmedBrief.brief_revision)) {
     return { ok: false, error: { code: "BRIEF_NOT_CONFIRMED", message: "plan.generate requires a confirmed Brief revision." }, trace: null };
   }
   const schema = JSON.parse(await readFile(schemaPath, "utf8"));
   const template = promptBlock(await readFile(promptPath, "utf8"));
-  const unresolved = unresolvedPlanFields(confirmedBrief);
+  const unresolved = mode==="replace_recommendation"?[decisionType]:unresolvedPlanFields(confirmedBrief);
+  if(mode==="replace_recommendation"&&(!ALLOWED.has(decisionType)||rejectedRecommendation?.decision_type!==decisionType))return{ok:false,error:{code:"REPLACEMENT_REQUEST_INVALID",message:"Replacement requires one valid rejected decision type."},trace:null};
   const structuredInput = {
+    mode,
     confirmed_brief: { brief_revision: confirmedBrief.brief_revision, lifecycle: confirmedBrief.lifecycle, locked_context: lockedContext(confirmedBrief) },
     unresolved_non_critical_fields: unresolved,
-    relevant_context: { visual_aid_requirement: confirmedBrief.visual_aid_requirement || null },
+    relevant_context: { visual_aid_requirement: confirmedBrief.visual_aid_requirement || null, replacement_context:mode==="replace_recommendation"?{decision_type:decisionType,rejected_recommendation:rejectedRecommendation,previous_rejected_suggestions:previousRejectedSuggestions}:null },
     provider_metadata: { provider_name: "deepseek", model_name: "deepseek-chat", prompt_version: "v0.1", run_id: runId }
   };
   const prompt = template.replace("{{structured_input_json}}", JSON.stringify(structuredInput, null, 2)).replace("{{output_schema_json}}", JSON.stringify(schema, null, 2));
@@ -61,5 +63,11 @@ export async function executePlanGenerate({ confirmedBrief, env = process.env, f
   const allowed = new Set(unresolved);
   if (plan.recommendations.some(item => !ALLOWED.has(item.decision_type) || !allowed.has(item.decision_type))) return { ok: false, error: { code: "PLAN_SCOPE_INVALID", message: "Creative Plan recommends a locked or resolved field." }, trace };
   plan.provider_metadata = { provider_name: trace.provider_name, model_name: trace.model_name, prompt_version: trace.prompt_version, run_id: trace.run_id };
+  if(mode==="replace_recommendation"){
+    const rejected=[rejectedRecommendation?.suggestion,...previousRejectedSuggestions].filter(Boolean).map(value=>String(value).trim());
+    const replacement=plan.recommendations.find(item=>item.decision_type===decisionType&&item.recommendation_id!==rejectedRecommendation.recommendation_id&&!rejected.includes(String(item.suggestion).trim()));
+    if(!replacement)return{ok:false,error:{code:"REPLACEMENT_INVALID",message:"Replacement must be a new candidate for the same decision type."},trace};
+    return{ok:true,skill_id:"plan.generate",replacement_recommendation:replacement,trace};
+  }
   return { ok: true, skill_id: "plan.generate", creative_plan: plan, trace };
 }

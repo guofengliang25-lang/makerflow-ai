@@ -71,3 +71,8 @@ test("wrong Brief revision, malformed JSON and schema invalid all fail closed", 
   assert.equal(schema.ok, false); assert.equal(schema.error.code, "SCHEMA_INVALID");
 });
 
+test("replace_recommendation复用plan.generate并只返回同类型新候选",async()=>{
+  const replacement={...structuredClone(validPlan),recommendations:[{...validPlan.recommendations[0],recommendation_id:"rec-form-b",suggestion:"纵向三段说明卡"},{...validPlan.recommendations[0],recommendation_id:"rec-form-c",suggestion:"单面信息卡"}]};
+  const result=await executePlanGenerate({confirmedBrief,mode:"replace_recommendation",decisionType:"form",rejectedRecommendation:validPlan.recommendations[0],previousRejectedSuggestions:[validPlan.recommendations[0].suggestion],env:{DEEPSEEK_API_KEY:"test"},fetchImpl:deepSeekEnvelope(replacement),runId:"run-replace-1"});
+  assert.equal(result.ok,true);assert.equal(result.replacement_recommendation.decision_type,"form");assert.equal(result.replacement_recommendation.recommendation_id,"rec-form-b");assert.equal(result.creative_plan,undefined);
+});

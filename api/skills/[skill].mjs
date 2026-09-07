@@ -95,12 +95,12 @@ export function createSkillHandler({
       if (!brief || brief.lifecycle !== "confirmed" || !Number.isInteger(brief.brief_revision)) {
         return send(response, 400, { ok: false, skill_id: skillId, error: { code: "INVALID_REQUEST", message: "Creative Plan需要已确认的Brief版本。" } });
       }
-      const result = await executePlanGenerate({ confirmedBrief: brief });
+      const result = await executePlanGenerate({ confirmedBrief: brief, mode: payload.mode || "generate_plan", decisionType: payload.decision_type || null, rejectedRecommendation: payload.rejected_recommendation || null, previousRejectedSuggestions: payload.previous_rejected_suggestions || [] });
       if (!result.ok) {
         const error = publicError(result.error);
         return send(response, errorStatus(error.code), { ok: false, skill_id: skillId, error });
       }
-      return send(response, 200, { ok: true, skill_id: skillId, creative_plan: result.creative_plan, trace: result.trace });
+      return send(response, 200, { ok: true, skill_id: skillId, ...(payload.mode === "replace_recommendation" ? { replacement_recommendation: result.replacement_recommendation } : { creative_plan: result.creative_plan }), trace: result.trace });
     } catch (error) {
       const invalidJson = error instanceof SyntaxError;
       return send(response, invalidJson ? 400 : 500, {

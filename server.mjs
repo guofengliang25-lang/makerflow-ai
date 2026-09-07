@@ -150,9 +150,9 @@ export function createMakerFlowServer({
       try{
         const payload=await readJson(request),brief=payload.confirmed_brief;
         if(!brief||brief.lifecycle!=="confirmed"||!Number.isInteger(brief.brief_revision)){sendJson(response,400,{ok:false,skill_id:"plan.generate",error:{code:"INVALID_REQUEST",message:"Creative Plan需要已确认的Brief版本。"}});return;}
-        const result=await planExecutor({confirmedBrief:brief});
+        const result=await planExecutor({confirmedBrief:brief,mode:payload.mode||"generate_plan",decisionType:payload.decision_type||null,rejectedRecommendation:payload.rejected_recommendation||null,previousRejectedSuggestions:payload.previous_rejected_suggestions||[]});
         if(!result.ok){const error=publicError(result.error);sendJson(response,errorStatus(error.code),{ok:false,skill_id:"plan.generate",error});return;}
-        sendJson(response,200,{ok:true,skill_id:"plan.generate",creative_plan:result.creative_plan,trace:result.trace});
+        sendJson(response,200,{ok:true,skill_id:"plan.generate",...(payload.mode==="replace_recommendation"?{replacement_recommendation:result.replacement_recommendation}:{creative_plan:result.creative_plan}),trace:result.trace});
       }catch{sendJson(response,500,{ok:false,skill_id:"plan.generate",error:{code:"INTERNAL_ERROR",message:"服务暂时无法处理请求，请稍后重试。"}});}
       return;
     }

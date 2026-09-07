@@ -122,3 +122,11 @@ test("POST plan.generate rejects draft Brief and sanitizes provider failure", as
     assert.doesNotMatch(JSON.stringify(body), /secret upstream detail|stack/i);
   });
 });
+
+test("POST plan.generate replacement模式复用同一executor并返回单项candidate",async()=>{
+  let input;const brief={brief_revision:2,lifecycle:"confirmed",fields:[]},rejected={recommendation_id:"a",decision_type:"form",suggestion:"A"};
+  await withServer({executePlanGenerate:async value=>{input=value;return{ok:true,replacement_recommendation:{...rejected,recommendation_id:"b",suggestion:"B"},trace:{}};}},async baseUrl=>{
+    const response=await fetch(`${baseUrl}/api/skills/plan.generate`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({mode:"replace_recommendation",confirmed_brief:brief,source_brief_revision:2,decision_type:"form",rejected_recommendation:rejected,previous_rejected_suggestions:["A"]})}),body=await response.json();
+    assert.equal(input.mode,"replace_recommendation");assert.equal(input.decisionType,"form");assert.equal(body.replacement_recommendation.recommendation_id,"b");assert.equal(body.creative_plan,undefined);
+  });
+});
