@@ -68,12 +68,12 @@ export async function extractAndValidateBrief({ userInput, attachments = [], fet
   };
 }
 
-export async function requestMissingQuestions({briefCandidate,validationResult,confirmedContext={},fetchImpl=globalThis.fetch}){
+export async function requestMissingQuestions({briefCandidate,validationResult,confirmedContext={},userInput="",fetchImpl=globalThis.fetch}){
   try{
-    const response=await fetchImpl("./api/skills/brief.ask_missing",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({brief_candidate:briefCandidate,brief_validation_result:validationResult,missing_items:validationResult.missing_items||[],conflict_items:validationResult.conflict_items||[],confirmed_context:confirmedContext})});
+    const response=await fetchImpl("./api/skills/brief.ask_missing",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({brief_candidate:briefCandidate,brief_validation_result:validationResult,missing_items:validationResult.missing_items||[],conflict_items:validationResult.conflict_items||[],confirmed_context:confirmedContext,user_input:userInput})});
     const envelope=await response.json();
-    if(!response.ok||!envelope.ok)return{ok:false,error:envelope.error||{code:"ASK_FAILED",message:"问题生成失败，请重试或手工编辑。"}};
-    return{ok:true,questions:envelope.clarifying_questions,trace:sanitizeModelTrace(envelope.trace)};
+    if(!response.ok||!envelope.ok)return{ok:false,status:"ERROR",error:envelope.error||{code:"ASK_FAILED",message:"问题生成失败，请重试或手工编辑。"}};
+    return{ok:true,status:envelope.status||"NEED_CLARIFICATION",warning:envelope.warning||null,brief:envelope.brief||{known_fields:[]},missing_fields:envelope.missing_fields||[],questions:envelope.questions||envelope.clarifying_questions||[],completion_status:envelope.completion_status||{complete:envelope.status==="READY_TO_GENERATE",missing_fields:envelope.missing_fields||[]},trace:sanitizeModelTrace(envelope.trace)};
   }catch{return{ok:false,error:{code:"NETWORK_ERROR",message:"问题生成失败，请重试或手工编辑。"}}}
 }
 

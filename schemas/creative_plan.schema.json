@@ -23,6 +23,26 @@
         }
       }
     },
+    "plans": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["plan_id", "title", "preview", "material", "process", "time", "reason"],
+        "additionalProperties": false,
+        "properties": {
+          "plan_id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "preview": { "type": "string", "minLength": 1 },
+          "previewSvg": { "type": "string" },
+          "previewImage": { "type": "string" },
+          "material": { "type": "string", "minLength": 1 },
+          "process": { "type": "string", "minLength": 1 },
+          "time": { "type": "string", "minLength": 1 },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
     "unresolved_items": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "provider_metadata": {
       "type": "object",

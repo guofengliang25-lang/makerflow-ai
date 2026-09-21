@@ -126,7 +126,7 @@ test("完成Plan Review后可建立accepted Plan并启用Step 4", () => {
 test("普通Step 1不显示内部Demo Sample提示，Step 2和3使用新交互CTA", async () => {
   const app = await readFile("prototype/app.js", "utf8");
   assert.doesNotMatch(app, /IS_QA \|\| state\.job\.sampleMode/);
-  assert.match(app, /手动补充缺失信息/);
+  assert.match(app, /clarificationLedger/);
   assert.match(app, /采用当前方案并继续/);
   assert.match(app, /保存并采用/);
 });

@@ -1,3 +1,5 @@
+import { parseMomoRayHeightMapping } from "./brief-validate.js";
+
 const escapeXml = (value = "") => String(value).replace(/[&<>"']/g, char => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;"
 })[char]);
@@ -9,12 +11,24 @@ const numberValue = (value, fallback) => {
 
 const fieldValue = (brief, id, fallback = "") => brief?.fields?.find(field => field.id === id)?.value ?? fallback;
 const DEFAULT_ELEMENTS={"title":{id:"title",position:{x:0,y:0},draggable:true,locked:false},"step-1":{id:"step-1",position:{x:0,y:0},draggable:true,locked:false},"step-2":{id:"step-2",position:{x:0,y:0},draggable:true,locked:false},"step-3":{id:"step-3",position:{x:0,y:0},draggable:true,locked:false},"footer":{id:"footer",position:{x:0,y:0},draggable:true,locked:false},"visual-elements":{id:"visual-elements",position:{x:0,y:0},draggable:true,locked:false},"cutline":{id:"cutline",position:{x:0,y:0},draggable:false,locked:true},"artboard":{id:"artboard",position:{x:0,y:0},draggable:false,locked:true}};
-const MOMORAY_HEIGHT_STEPS=[
-  {id:"step-1",title:"0片 · 15 cm",body:"感觉偏高时，可减少垫片",insert_count:0,pillow_height:{value:15,unit:"cm"}},
-  {id:"step-2",title:"1片 · 16 cm",body:"标准配置，适合作为默认起点",insert_count:1,pillow_height:{value:16,unit:"cm"}},
-  {id:"step-3",title:"2片 · 17 cm",body:"感觉偏低时，可增加垫片",insert_count:2,pillow_height:{value:17,unit:"cm"}}
-];
 const elementPosition=(spec,id)=>spec.elements?.[id]?.position||{x:0,y:0};
+
+function briefSteps(brief, baseSpec) {
+  const facts=fieldValue(brief,"product_facts","");
+  const mapping=parseMomoRayHeightMapping(facts)||[];
+  if(mapping.length===3){
+    const guidance=[
+      facts.match(/感觉偏高时[^；。]*/)?.[0]||"根据当前需求调整第一个配置",
+      facts.match(/1片[^；。]*/)?.[0]||"根据当前需求选择默认配置",
+      facts.match(/感觉偏低时[^。]*/)?.[0]||"根据当前需求调整第三个配置"
+    ];
+    return mapping.map((item,index)=>({id:`step-${index+1}`,title:`${item.insert_count}片 · ${item.height_cm} cm`,body:guidance[index],insert_count:item.insert_count,pillow_height:{value:item.height_cm,unit:"cm"}}));
+  }
+  const source=fieldValue(brief,"must_content","")||fieldValue(brief,"purpose","")||"当前需求的关键信息";
+  const parts=String(source).split(/[，,、；;。\n]/).map(value=>value.trim()).filter(Boolean).slice(0,3);
+  while(parts.length<3)parts.push(`待确认内容 ${parts.length+1}`);
+  return parts.map((value,index)=>({id:`step-${index+1}`,title:value,body:"根据当前 Brief 生成的内容模块",insert_count:null,pillow_height:null}));
+}
 
 export function buildDesignSpecFromBrief(brief, plan = {}, baseSpec = {}) {
   const finishedSize = brief?.finished_size || {};
@@ -24,20 +38,23 @@ export function buildDesignSpecFromBrief(brief, plan = {}, baseSpec = {}) {
   const visualRequirement = brief?.visual_aid_requirement || {};
   const visualPlan = plan.visual_elements || {};
   const visualEnabled = visualPlan.enabled ?? visualRequirement.status === "required";
+  const title=plan.selected_plan?.title||fieldValue(brief,"deliverable","")||"MakerFlow 作品";
+  const steps=briefSteps(brief,baseSpec);
+  const purpose=fieldValue(brief,"purpose","")||"根据当前需求完成制作";
   return {
     schema_version: "1.1",
     design_spec_revision: Number(baseSpec.design_spec_revision || 1),
-    project_id: "momoray-insert-card",
+    project_id: "makerflow-session",
     brief_revision: Number(brief?.brief_revision || 1),
     canvas: { width, height, unit },
     content: {
-      title: baseSpec.content?.title || "MomoRay 高度调节说明",
-      steps: structuredClone(baseSpec.content?.steps || MOMORAY_HEIGHT_STEPS),
-      footer: baseSpec.content?.footer || "请根据实际使用感受调整模块组合"
+      title,
+      steps,
+      footer: purpose
     },
     layout: { template_id: plan.template_id || baseSpec.layout?.template_id || "three-column" },
     style: { primary_color: baseSpec.style?.primary_color || "#333333", background_color: "#ffffff" },
-    icons: baseSpec.icons || { "step-1": "pillow-low", "step-2": "pillow-medium", "step-3": "pillow-high" },
+    icons: plan.icons || {},
     elements: structuredClone(baseSpec.elements || DEFAULT_ELEMENTS),
     visual_elements: {
       enabled: visualEnabled,
@@ -53,7 +70,7 @@ export function buildDesignSpecFromBrief(brief, plan = {}, baseSpec = {}) {
       text_strategy: baseSpec.output_requirements?.text_strategy || "editable",
       required_format: "svg"
     },
-    source: baseSpec.source || { type: "makerflow_template", label: "MakerFlow模板生成" }
+    source: { type: "generated_session", label: `基于当前需求：${title}` }
   };
 }
 
@@ -126,7 +143,7 @@ export function renderSvgString(spec, options = {}) {
   const cutline = spec.cutline.enabled ? `<path id="cutline" data-element-id="cutline" data-draggable="false" data-role="cutline" d="M 1 1 H ${width - 1} V ${height - 1} H 1 Z" fill="none" stroke="#777" stroke-width="0.3" stroke-dasharray="2 1"/>` : "";
   const footerPos=elementPosition(spec,"footer"),titlePos=elementPosition(spec,"title");
   const footer = `<g id="footer" data-element-id="footer" data-draggable="true" transform="translate(${footerPos.x} ${footerPos.y})"><text x="${width*.5}" y="${height*.94}" text-anchor="middle" font-size="3.2" fill="#666">${escapeXml(spec.content.footer || "")}</text></g>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}${escapeXml(unit)}" height="${height}${escapeXml(unit)}" viewBox="0 0 ${width} ${height}" data-design-revision="${revision}" role="img" aria-labelledby="design-title design-description"><title id="design-title">${escapeXml(spec.content.title)}</title><desc id="design-description">MomoRay模块化枕头包装内高度调节说明卡</desc><rect id="background" data-element-id="artboard" data-draggable="false" width="${width}" height="${height}" fill="${escapeXml(spec.style.background_color)}"/><g id="layer-title" data-element-id="title" data-draggable="true" transform="translate(${titlePos.x} ${titlePos.y})"><text x="${width * .075}" y="${height * .14}" font-size="8" font-weight="700" fill="${escapeXml(spec.style.primary_color)}">${escapeXml(spec.content.title)}</text><line x1="${width * .075}" y1="${height * .2}" x2="${width * .925}" y2="${height * .2}" stroke="${escapeXml(spec.style.primary_color)}" stroke-width="0.7"/></g>${visualElementMarkup(spec)}${layout}${footer}${cutline}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}${escapeXml(unit)}" height="${height}${escapeXml(unit)}" viewBox="0 0 ${width} ${height}" data-design-revision="${revision}" role="img" aria-labelledby="design-title design-description"><title id="design-title">${escapeXml(spec.content.title)}</title><desc id="design-description">${escapeXml(spec.content.footer)}</desc><rect id="background" data-element-id="artboard" data-draggable="false" width="${width}" height="${height}" fill="${escapeXml(spec.style.background_color)}"/><g id="layer-title" data-element-id="title" data-draggable="true" transform="translate(${titlePos.x} ${titlePos.y})"><text x="${width * .075}" y="${height * .14}" font-size="8" font-weight="700" fill="${escapeXml(spec.style.primary_color)}">${escapeXml(spec.content.title)}</text><line x1="${width * .075}" y1="${height * .2}" x2="${width * .925}" y2="${height * .2}" stroke="${escapeXml(spec.style.primary_color)}" stroke-width="0.7"/></g>${visualElementMarkup(spec)}${layout}${footer}${cutline}</svg>`;
 }
 
 export function downloadTextFile(content, filename, type) {

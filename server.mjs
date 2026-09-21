@@ -141,8 +141,8 @@ export function createMakerFlowServer({
     if(pathname==="/api/skills/brief.ask_missing"){
       if(request.method!=="POST"){sendJson(response,405,{ok:false,skill_id:"brief.ask_missing",error:{code:"METHOD_NOT_ALLOWED",message:"只支持POST请求。"}});return;}
       try{const payload=await readJson(request);if(!payload.brief_candidate||!payload.brief_validation_result||!Array.isArray(payload.missing_items)||!Array.isArray(payload.conflict_items)){sendJson(response,400,{ok:false,skill_id:"brief.ask_missing",error:{code:"INVALID_REQUEST",message:"缺少验证结果。"}});return;}
-        const result=await askExecutor({structuredInput:payload});if(!result.ok){const error=publicError(result.error);sendJson(response,errorStatus(error.code),{ok:false,skill_id:"brief.ask_missing",error});return;}
-        sendJson(response,200,{ok:true,skill_id:"brief.ask_missing",clarifying_questions:result.clarifying_questions,trace:result.trace});
+        const result=await askExecutor({structuredInput:payload});if(!result.ok){const error=publicError(result.error);sendJson(response,errorStatus(error.code),{ok:false,status:"ERROR",skill_id:"brief.ask_missing",error});return;}
+        sendJson(response,200,{ok:true,status:result.status,skill_id:"brief.ask_missing",brief:result.brief,missing_fields:result.missing_fields,questions:result.questions,clarifying_questions:result.clarifying_questions,completion_status:result.completion_status,warning:result.warning,trace:result.trace});
       }catch{sendJson(response,500,{ok:false,skill_id:"brief.ask_missing",error:{code:"INTERNAL_ERROR",message:"服务暂时无法处理请求，请稍后重试。"}});}return;
     }
     if(pathname==="/api/skills/plan.generate"){

@@ -3,15 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MakerFlow 低保真流程 Demo</title>
+  <title>MakerFlow · 可制作作品助手</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="app-header">
-    <div>
-      <p class="eyebrow">MakerFlow v0.2 · SVG-first Demo</p>
-      <h1>MakerFlow</h1>
-    </div>
+    <a class="brand" href="./" aria-label="MakerFlow 首页"><span class="brand-mark" aria-hidden="true"><span></span></span><strong>MakerFlow</strong></a>
     <div id="qaControls" class="header-actions" hidden>
       <label for="scenarioSelect">Preflight 场景</label>
       <select id="scenarioSelect" aria-label="切换Preflight场景">
@@ -20,17 +17,15 @@
         <option value="pass">PASS</option>
       </select>
     </div>
-    <button id="resetButton" class="button secondary" type="button">一键重置</button>
+    <div class="header-end"><button id="resetButton" class="icon-button reset-control" type="button" title="重置项目" aria-label="重置项目">↻</button><button class="avatar-button" type="button" aria-label="用户账户"><span>○</span></button></div>
   </header>
 
   <nav class="stepper" aria-label="流程步骤">
-    <button data-step="1"><span>1</span>Define</button>
-    <button data-step="2"><span>2</span>Editable Brief</button>
-    <button data-step="3"><span>3</span>Creative Plan</button>
-    <button data-step="4"><span>4</span>Create &amp; Edit</button>
-    <button data-step="5"><span>5</span>Preflight</button>
-    <button data-step="6"><span>6</span>Resolve Issues</button>
-    <button data-step="7"><span>7</span>Export &amp; Handoff</button>
+    <button data-public-step="1" data-step="1"><span>01</span>灵感输入</button>
+    <button data-public-step="2" data-step="2"><span>02</span>AI 理解</button>
+    <button data-public-step="3" data-step="3"><span>03</span>方案生成</button>
+    <button data-public-step="4" data-step="4"><span>04</span>编辑优化</button>
+    <button data-public-step="5" data-step="5"><span>05</span>制造交付</button>
   </nav>
 
   <main id="app" tabindex="-1"></main>
